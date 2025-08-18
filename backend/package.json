@@ -9,7 +9,9 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "db:migrate": "ts-node src/utils/migrate.ts",
-    "db:seed": "ts-node src/utils/seed.ts"
+    "db:seed": "ts-node src/utils/seed.ts",
+    "db:migrate:bpm": "ts-node src/utils/migrateBPM.ts",
+    "db:seed:bpm": "ts-node src/utils/seedBPMData.ts"
   },
   "dependencies": {
     "express": "^4.18.2",

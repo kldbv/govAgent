@@ -28,6 +28,15 @@ class RecommendationService {
         const industryScore = this.matchIndustry(userProfile, program);
         score += industryScore.score;
         reasons.push(...industryScore.reasons);
+        const okedScore = this.matchOkedCode(userProfile, program);
+        score += okedScore.score;
+        reasons.push(...okedScore.reasons);
+        const regionScore = this.matchRegion(userProfile, program);
+        score += regionScore.score;
+        reasons.push(...regionScore.reasons);
+        const loanScore = this.matchLoanAmount(userProfile, program);
+        score += loanScore.score;
+        reasons.push(...loanScore.reasons);
         const experienceScore = this.matchExperience(userProfile, program);
         score += experienceScore.score;
         reasons.push(...experienceScore.reasons);
@@ -163,6 +172,75 @@ class RecommendationService {
                 program.title.toLowerCase().includes('микрокредит')) {
                 score += 10;
                 reasons.push('Подходит для стартового финансирования');
+            }
+        }
+        return { score, reasons };
+    }
+    matchOkedCode(userProfile, program) {
+        let score = 0;
+        const reasons = [];
+        if (userProfile.oked_code && program.oked_filters && program.oked_filters.length > 0) {
+            const userOked = userProfile.oked_code;
+            if (program.oked_filters.includes(userOked)) {
+                score += 35;
+                reasons.push('Точное соответствие по коду ОКЭД');
+            }
+            else {
+                for (const filter of program.oked_filters) {
+                    if (userOked.startsWith(filter) || filter.startsWith(userOked.substring(0, 1))) {
+                        score += 20;
+                        reasons.push('Соответствие по категории ОКЭД');
+                        break;
+                    }
+                }
+            }
+        }
+        return { score, reasons };
+    }
+    matchRegion(userProfile, program) {
+        let score = 0;
+        const reasons = [];
+        if (program.supported_regions && program.supported_regions.length > 0) {
+            if (program.supported_regions.includes(userProfile.region)) {
+                score += 25;
+                reasons.push('Программа действует в вашем регионе');
+            }
+            else if (program.supported_regions.includes('ALL')) {
+                score += 15;
+                reasons.push('Программа действует во всех регионах');
+            }
+        }
+        else {
+            score += 15;
+            reasons.push('Программа без региональных ограничений');
+        }
+        return { score, reasons };
+    }
+    matchLoanAmount(userProfile, program) {
+        let score = 0;
+        const reasons = [];
+        if (userProfile.desired_loan_amount && program.min_loan_amount && program.max_loan_amount) {
+            const desired = userProfile.desired_loan_amount;
+            const min = program.min_loan_amount;
+            const max = program.max_loan_amount;
+            if (desired >= min && desired <= max) {
+                score += 30;
+                reasons.push('Размер займа соответствует вашим потребностям');
+            }
+            else if (desired < min) {
+                score += 15;
+                reasons.push('Программа может покрыть ваши потребности в финансировании');
+            }
+            else if (desired > max) {
+                score += 5;
+                reasons.push('Программа может частично покрыть ваши потребности');
+            }
+        }
+        else if (userProfile.desired_loan_amount && program.funding_amount) {
+            const ratio = program.funding_amount / userProfile.desired_loan_amount;
+            if (ratio >= 0.8 && ratio <= 1.5) {
+                score += 20;
+                reasons.push('Размер финансирования близок к желаемому');
             }
         }
         return { score, reasons };

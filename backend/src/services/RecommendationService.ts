@@ -43,10 +43,25 @@ export class RecommendationService {
     score += businessSizeScore.score;
     reasons.push(...businessSizeScore.reasons);
 
-    // Industry matching
+    // Industry/OKED matching
     const industryScore = this.matchIndustry(userProfile, program);
     score += industryScore.score;
     reasons.push(...industryScore.reasons);
+
+    // OKED code matching (new BPM feature)
+    const okedScore = this.matchOkedCode(userProfile, program);
+    score += okedScore.score;
+    reasons.push(...okedScore.reasons);
+
+    // Region matching (new BPM feature)
+    const regionScore = this.matchRegion(userProfile, program);
+    score += regionScore.score;
+    reasons.push(...regionScore.reasons);
+
+    // Loan amount matching (new BPM feature)
+    const loanScore = this.matchLoanAmount(userProfile, program);
+    score += loanScore.score;
+    reasons.push(...loanScore.reasons);
 
     // Experience matching
     const experienceScore = this.matchExperience(userProfile, program);
@@ -243,6 +258,97 @@ export class RecommendationService {
           program.title.toLowerCase().includes('микрокредит')) {
         score += 10;
         reasons.push('Подходит для стартового финансирования');
+      }
+    }
+
+    return { score, reasons };
+  }
+
+  // New BPM-aligned matching methods
+  private matchOkedCode(
+    userProfile: UserProfile, 
+    program: BusinessProgram
+  ): { score: number; reasons: string[] } {
+    let score = 0;
+    const reasons: string[] = [];
+
+    if (userProfile.oked_code && program.oked_filters && program.oked_filters.length > 0) {
+      const userOked = userProfile.oked_code;
+      
+      // Exact match
+      if (program.oked_filters.includes(userOked)) {
+        score += 35;
+        reasons.push('Точное соответствие по коду ОКЭД');
+      } 
+      // Parent category match (e.g., user has "62.01" and program accepts "J" or "62")
+      else {
+        for (const filter of program.oked_filters) {
+          if (userOked.startsWith(filter) || filter.startsWith(userOked.substring(0, 1))) {
+            score += 20;
+            reasons.push('Соответствие по категории ОКЭД');
+            break;
+          }
+        }
+      }
+    }
+
+    return { score, reasons };
+  }
+
+  private matchRegion(
+    userProfile: UserProfile, 
+    program: BusinessProgram
+  ): { score: number; reasons: string[] } {
+    let score = 0;
+    const reasons: string[] = [];
+
+    if (program.supported_regions && program.supported_regions.length > 0) {
+      if (program.supported_regions.includes(userProfile.region)) {
+        score += 25;
+        reasons.push('Программа действует в вашем регионе');
+      } else if (program.supported_regions.includes('ALL')) {
+        score += 15;
+        reasons.push('Программа действует во всех регионах');
+      }
+    } else {
+      // If no region restrictions, assume nationwide
+      score += 15;
+      reasons.push('Программа без региональных ограничений');
+    }
+
+    return { score, reasons };
+  }
+
+  private matchLoanAmount(
+    userProfile: UserProfile, 
+    program: BusinessProgram
+  ): { score: number; reasons: string[] } {
+    let score = 0;
+    const reasons: string[] = [];
+
+    if (userProfile.desired_loan_amount && program.min_loan_amount && program.max_loan_amount) {
+      const desired = userProfile.desired_loan_amount;
+      const min = program.min_loan_amount;
+      const max = program.max_loan_amount;
+
+      if (desired >= min && desired <= max) {
+        score += 30;
+        reasons.push('Размер займа соответствует вашим потребностям');
+      } else if (desired < min) {
+        // User wants less, but program offers more - still relevant
+        score += 15;
+        reasons.push('Программа может покрыть ваши потребности в финансировании');
+      } else if (desired > max) {
+        // User wants more than program offers - less relevant
+        score += 5;
+        reasons.push('Программа может частично покрыть ваши потребности');
+      }
+    } else if (userProfile.desired_loan_amount && program.funding_amount) {
+      // Fallback to general funding amount matching
+      const ratio = program.funding_amount / userProfile.desired_loan_amount;
+      if (ratio >= 0.8 && ratio <= 1.5) {
+        score += 20;
+        reasons.push('Размер финансирования близок к желаемому');
       }
     }
 

@@ -36,6 +36,10 @@ export interface UserProfile {
   experience_years: number;
   annual_revenue?: number;
   employee_count?: number;
+  bin?: string;
+  oked_code?: string;
+  desired_loan_amount?: number;
+  business_goals?: string[];
   created_at: Date;
   updated_at: Date;
 }
@@ -54,6 +58,12 @@ export interface BusinessProgram {
   application_process: string;
   contact_info: string;
   is_active: boolean;
+  supported_regions?: string[];
+  min_loan_amount?: number;
+  max_loan_amount?: number;
+  oked_filters?: string[];
+  required_documents?: any;
+  application_steps?: any[];
   created_at: Date;
   updated_at: Date;
 }
