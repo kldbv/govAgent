@@ -77,20 +77,32 @@ async function createApplicationTables() {
       WHERE application_data IS NULL AND form_data IS NOT NULL;
     `);
 
-    // Add status check constraint if missing (best-effort)
+    // Ensure status check constraint is correct and consistent
     await pool.query(`
       DO $$
       BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.constraint_column_usage ccu
-          JOIN information_schema.table_constraints tc
-            ON tc.constraint_name = ccu.constraint_name
-          WHERE tc.table_name = 'applications' AND tc.constraint_type = 'CHECK' AND tc.constraint_name = 'applications_status_check'
+        -- Drop existing constraint if present (could have wrong allowed values or casing)
+        IF EXISTS (
+          SELECT 1 FROM information_schema.table_constraints 
+          WHERE table_name = 'applications' AND constraint_name = 'applications_status_check'
         ) THEN
+          EXECUTE 'ALTER TABLE applications DROP CONSTRAINT applications_status_check';
+        END IF;
+        -- Recreate with canonical allowed values (accept both lower and upper-case just in case)
+        EXECUTE $$
           ALTER TABLE applications
           ADD CONSTRAINT applications_status_check
-          CHECK (status IN ('draft','submitted','under_review','additional_info_required','approved','rejected'));
-        END IF;
+          CHECK (
+            LOWER(status) IN (
+              'draft',
+              'submitted',
+              'under_review',
+              'additional_info_required',
+              'approved',
+              'rejected'
+            )
+          )
+        $$;
       END$$;
     `);
 
