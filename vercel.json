@@ -2,15 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/src/server.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "frontend/package.json",
+      "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "frontend/dist"
       }
+    },
+    {
+      "src": "backend/src/server.ts",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -19,13 +19,12 @@
       "dest": "/backend/src/server.ts"
     },
     {
-      "src": "/(.*)",
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))$",
       "dest": "/frontend/dist/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/dist/index.html"
     }
-  ],
-  "functions": {
-    "backend/src/server.ts": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }

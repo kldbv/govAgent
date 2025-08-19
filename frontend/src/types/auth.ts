@@ -14,6 +14,11 @@ export interface UserProfile {
   experience_years: number
   annual_revenue?: number
   employee_count?: number
+  // New BPM fields
+  bin?: string
+  oked_code?: string
+  desired_loan_amount?: number
+  business_goals?: string[]
 }
 
 export interface LoginCredentials {

@@ -2,11 +2,25 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const ProgramController_1 = require("../controllers/ProgramController");
+const GuidanceController_1 = require("../controllers/GuidanceController");
+const InstructionController_1 = require("../controllers/InstructionController");
 const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 const programController = new ProgramController_1.ProgramController();
+const guidanceController = new GuidanceController_1.GuidanceController();
+const instructionController = new InstructionController_1.InstructionController();
 router.get('/', programController.getPrograms);
+router.get('/search', programController.searchPrograms);
+router.get('/stats', programController.getProgramStats);
 router.get('/recommendations', auth_1.authenticate, programController.getRecommendations);
 router.get('/:id', programController.getProgramById);
+router.get('/:programId/guidance', auth_1.authenticate, guidanceController.getGuidance);
+router.post('/:programId/guidance/template', auth_1.authenticate, guidanceController.generateTemplate);
+router.post('/:programId/guidance/step-complete', auth_1.authenticate, guidanceController.markStepComplete);
+router.get('/:programId/guidance/progress', auth_1.authenticate, guidanceController.getProgress);
+router.get('/:programId/instructions', auth_1.authenticate, instructionController.getInstructions);
+router.post('/:programId/instructions/step-status', auth_1.authenticate, instructionController.updateStepStatus);
+router.get('/:programId/instructions/progress', auth_1.authenticate, instructionController.getProgress);
+router.post('/:programId/instructions/submit', auth_1.authenticate, instructionController.markApplicationSubmitted);
 exports.default = router;
 //# sourceMappingURL=programs.js.map

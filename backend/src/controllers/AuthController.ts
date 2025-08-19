@@ -25,7 +25,13 @@ const profileSchema = Joi.object({
   experience_years: Joi.number().integer().min(0).required(),
   annual_revenue: Joi.number().min(0).optional(),
   employee_count: Joi.number().integer().min(0).optional(),
-});
+  // New BPM fields
+  bin: Joi.string().length(12).pattern(/^[0-9]+$/).optional(),
+  oked_code: Joi.string().max(10).optional(),
+  desired_loan_amount: Joi.number().min(0).optional(),
+  business_goals: Joi.array().items(Joi.string()).optional(),
+  business_goals_comments: Joi.string().max(2000).allow('', null).optional(),
+}).unknown(false);
 
 export class AuthController {
   register = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -145,32 +151,39 @@ export class AuthController {
     // Get user with profile
     const userResult = await pool.query(
       `SELECT u.id, u.email, u.full_name, u.created_at,
+              p.user_id AS profile_user_id,
               p.business_type, p.business_size, p.industry, p.region,
-              p.experience_years, p.annual_revenue, p.employee_count
+              p.experience_years, p.annual_revenue, p.employee_count,
+              p.bin, p.oked_code, p.desired_loan_amount, p.business_goals, p.business_goals_comments
        FROM users u 
        LEFT JOIN user_profiles p ON u.id = p.user_id 
        WHERE u.id = $1`,
       [userId]
     );
 
-    const user = userResult.rows[0];
+    const row = userResult.rows[0];
 
     res.json({
       success: true,
       data: {
         user: {
-          id: user.id,
-          email: user.email,
-          full_name: user.full_name,
-          created_at: user.created_at,
-          profile: user.business_type ? {
-            business_type: user.business_type,
-            business_size: user.business_size,
-            industry: user.industry,
-            region: user.region,
-            experience_years: user.experience_years,
-            annual_revenue: user.annual_revenue,
-            employee_count: user.employee_count,
+          id: row.id,
+          email: row.email,
+          full_name: row.full_name,
+          created_at: row.created_at,
+          profile: row.profile_user_id ? {
+            business_type: row.business_type,
+            business_size: row.business_size,
+            industry: row.industry,
+            region: row.region,
+            experience_years: row.experience_years,
+            annual_revenue: row.annual_revenue,
+            employee_count: row.employee_count,
+            bin: row.bin,
+            oked_code: row.oked_code,
+            desired_loan_amount: row.desired_loan_amount,
+            business_goals: row.business_goals,
+            business_goals_comments: row.business_goals_comments,
           } : null,
         },
       },
@@ -192,6 +205,11 @@ export class AuthController {
       experience_years,
       annual_revenue,
       employee_count,
+      bin,
+      oked_code,
+      desired_loan_amount,
+      business_goals,
+      business_goals_comments,
     } = req.body;
 
     // Check if profile exists
@@ -206,8 +224,11 @@ export class AuthController {
       result = await pool.query(
         `UPDATE user_profiles 
          SET business_type = $1, business_size = $2, industry = $3, region = $4,
-             experience_years = $5, annual_revenue = $6, employee_count = $7, updated_at = NOW()
-         WHERE user_id = $8
+             experience_years = $5, annual_revenue = $6, employee_count = $7,
+             bin = $8, oked_code = $9, desired_loan_amount = $10, business_goals = $11,
+             business_goals_comments = $12,
+             updated_at = NOW()
+         WHERE user_id = $13
          RETURNING *`,
         [
           business_type,
@@ -217,6 +238,11 @@ export class AuthController {
           experience_years,
           annual_revenue,
           employee_count,
+          bin,
+          oked_code,
+          desired_loan_amount,
+          business_goals,
+          business_goals_comments,
           userId,
         ]
       );
@@ -224,8 +250,8 @@ export class AuthController {
       // Create new profile
       result = await pool.query(
         `INSERT INTO user_profiles 
-         (user_id, business_type, business_size, industry, region, experience_years, annual_revenue, employee_count)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         (user_id, business_type, business_size, industry, region, experience_years, annual_revenue, employee_count, bin, oked_code, desired_loan_amount, business_goals, business_goals_comments)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          RETURNING *`,
         [
           userId,
@@ -236,6 +262,11 @@ export class AuthController {
           experience_years,
           annual_revenue,
           employee_count,
+          bin,
+          oked_code,
+          desired_loan_amount,
+          business_goals,
+          business_goals_comments,
         ]
       );
     }

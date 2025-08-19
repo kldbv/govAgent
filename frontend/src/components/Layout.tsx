@@ -1,6 +1,7 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '@/hooks/useAuth'
 import { User, LogOut, Search, Home, FileText, Star } from 'lucide-react'
+import { ChatWidget } from './ChatWidget'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -9,6 +10,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { isAuthenticated, user, logout } = useAuthContext()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isActive = (path: string) => location.pathname === path
 
@@ -145,6 +147,12 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </footer>
+
+      {/* Chat Widget */}
+      <ChatWidget 
+        isAuthenticated={isAuthenticated}
+        onAuthRequired={() => navigate('/login')}
+      />
     </div>
   )
 }

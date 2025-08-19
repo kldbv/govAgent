@@ -7,7 +7,8 @@ const bpmMigrations = [
   ADD COLUMN IF NOT EXISTS bin VARCHAR(12),
   ADD COLUMN IF NOT EXISTS oked_code VARCHAR(10),
   ADD COLUMN IF NOT EXISTS desired_loan_amount DECIMAL(15, 2),
-  ADD COLUMN IF NOT EXISTS business_goals TEXT[];
+  ADD COLUMN IF NOT EXISTS business_goals TEXT[],
+  ADD COLUMN IF NOT EXISTS business_goals_comments TEXT;
   `,
 
   // Add new fields to business_programs table

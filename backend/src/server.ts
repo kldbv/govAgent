@@ -7,12 +7,36 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import programRoutes from './routes/programs';
 import applicationRoutes from './routes/applications';
+import referenceRoutes from './routes/reference';
+import chatRoutes from './routes/chat';
+import guidanceRoutes from './routes/guidance';
+import analyticsRoutes from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
+import { createApplicationTables } from './utils/migrateApplicationTables';
+import { createApplicationSubmissionsTable } from './utils/migrateApplicationSubmissions';
+import { createProgressTable } from './utils/migrateProgressTable';
 
 dotenv.config();
 
+// Run essential migrations on startup (idempotent)
+(async () => {
+  try {
+    await createApplicationTables();
+    await createApplicationSubmissionsTable();
+    await createProgressTable();
+    console.log('✅ Startup migrations completed');
+  } catch (err) {
+    console.error('❌ Startup migrations failed (continuing to start server):', err);
+  }
+})();
+
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Trust proxy for Vercel deployment
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
 // Security middleware
 app.use(helmet());
@@ -61,6 +85,10 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/programs', programRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/api/reference', referenceRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/guidance', guidanceRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

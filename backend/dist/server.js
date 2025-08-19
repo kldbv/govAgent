@@ -11,10 +11,31 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const auth_1 = __importDefault(require("./routes/auth"));
 const programs_1 = __importDefault(require("./routes/programs"));
 const applications_1 = __importDefault(require("./routes/applications"));
+const reference_1 = __importDefault(require("./routes/reference"));
+const chat_1 = __importDefault(require("./routes/chat"));
+const guidance_1 = __importDefault(require("./routes/guidance"));
+const analytics_1 = __importDefault(require("./routes/analytics"));
 const errorHandler_1 = require("./middleware/errorHandler");
+const migrateApplicationTables_1 = require("./utils/migrateApplicationTables");
+const migrateApplicationSubmissions_1 = require("./utils/migrateApplicationSubmissions");
+const migrateProgressTable_1 = require("./utils/migrateProgressTable");
 dotenv_1.default.config();
+(async () => {
+    try {
+        await (0, migrateApplicationTables_1.createApplicationTables)();
+        await (0, migrateApplicationSubmissions_1.createApplicationSubmissionsTable)();
+        await (0, migrateProgressTable_1.createProgressTable)();
+        console.log('✅ Startup migrations completed');
+    }
+    catch (err) {
+        console.error('❌ Startup migrations failed (continuing to start server):', err);
+    }
+})();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
 app.use((0, helmet_1.default)());
 const limiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000,
@@ -49,6 +70,10 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', auth_1.default);
 app.use('/api/programs', programs_1.default);
 app.use('/api/applications', applications_1.default);
+app.use('/api/reference', reference_1.default);
+app.use('/api/chat', chat_1.default);
+app.use('/api/guidance', guidance_1.default);
+app.use('/api/analytics', analytics_1.default);
 app.use('*', (req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });

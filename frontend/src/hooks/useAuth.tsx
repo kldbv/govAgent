@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import * as api from '@/services/api'
-import { User, LoginCredentials, RegisterData } from '@/types/auth'
+import { User, LoginCredentials, RegisterData, UserProfile } from '@/types/auth'
 
 interface AuthContextType {
   user: User | null
@@ -11,6 +11,7 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>
   logout: () => void
   updateUser: (user: User) => void
+  updateProfile: (profileData: UserProfile) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -94,6 +95,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const updateUser = (userData: User) => {
     setUser(userData)
   }
+  
+  const updateProfile = async (profileData: UserProfile) => {
+    try {
+      const response = await api.updateUserProfile(profileData) as any
+      const updatedUser = { ...user, profile: response.data.profile }
+      setUser(updatedUser as User)
+      toast.success('Профиль успешно обновлен!')
+    } catch (error: any) {
+      toast.error(error.message || 'Ошибка обновления профиля')
+      throw error
+    }
+  }
 
   const value: AuthContextType = {
     user,
@@ -103,6 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     register,
     logout,
     updateUser,
+    updateProfile,
   }
 
   return (
