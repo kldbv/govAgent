@@ -75,7 +75,7 @@ class AuthController {
                 throw new errorHandler_1.AppError(error.details[0].message, 400);
             }
             const { email, password } = req.body;
-            const result = await database_1.default.query('SELECT id, email, password, full_name FROM users WHERE email = $1', [email]);
+            const result = await database_1.default.query('SELECT id, email, password, full_name, role FROM users WHERE email = $1', [email]);
             if (result.rows.length === 0) {
                 throw new errorHandler_1.AppError('Invalid email or password', 401);
             }
@@ -97,6 +97,7 @@ class AuthController {
                         id: user.id,
                         email: user.email,
                         full_name: user.full_name,
+                        role: user.role || 'user',
                     },
                     token,
                 },
@@ -104,7 +105,7 @@ class AuthController {
         });
         this.getProfile = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user?.id;
-            const userResult = await database_1.default.query(`SELECT u.id, u.email, u.full_name, u.created_at,
+            const userResult = await database_1.default.query(`SELECT u.id, u.email, u.full_name, u.created_at, u.role,
               p.user_id AS profile_user_id,
               p.business_type, p.business_size, p.industry, p.region,
               p.experience_years, p.annual_revenue, p.employee_count,
@@ -121,6 +122,7 @@ class AuthController {
                         email: row.email,
                         full_name: row.full_name,
                         created_at: row.created_at,
+                        role: row.role || 'user',
                         profile: row.profile_user_id ? {
                             business_type: row.business_type,
                             business_size: row.business_size,

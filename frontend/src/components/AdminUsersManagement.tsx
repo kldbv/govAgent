@@ -43,8 +43,12 @@ export function AdminUsersManagement() {
       if (role) params.role = role
 
       const response = await getAllUsers(params)
-      setUsers(response.data.users)
-      setPagination(response.data.pagination)
+      if (response && response.data) {
+        setUsers(response.data.users || [])
+        setPagination(response.data.pagination || null)
+      } else {
+        throw new Error('Invalid response format')
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load users')
       console.error('Error loading users:', err)

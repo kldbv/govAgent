@@ -26,11 +26,17 @@ export const errorHandler = (
 ): void => {
   const { statusCode = 500, message } = error;
 
-  console.error(`Error ${statusCode}:`, message);
+  // Enhanced logging for debugging admin issues
+  console.error(`\n=== ERROR DETAILS ===`);
+  console.error(`Status: ${statusCode}`);
+  console.error(`Message: ${message}`);
+  console.error(`Path: ${req.method} ${req.originalUrl}`);
+  console.error(`User: ${(req as any).user?.email || 'Not authenticated'}`);
   
   if (process.env.NODE_ENV === 'development') {
-    console.error(error.stack);
+    console.error(`Stack:`, error.stack);
   }
+  console.error(`==================\n`);
 
   const extra: any = {};
   // Surface minimal diagnostics even in production for MVP debugging

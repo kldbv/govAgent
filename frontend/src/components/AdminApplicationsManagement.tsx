@@ -77,8 +77,12 @@ export function AdminApplicationsManagement() {
       if (status) params.status = status
 
       const response = await getAllAdminApplications(params)
-      setApplications(response.data.applications)
-      setPagination(response.data.pagination)
+      if (response && response.data) {
+        setApplications(response.data.applications || [])
+        setPagination(response.data.pagination || null)
+      } else {
+        throw new Error('Invalid response format')
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load applications')
       console.error('Error loading applications:', err)

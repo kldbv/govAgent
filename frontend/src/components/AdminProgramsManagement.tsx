@@ -78,8 +78,12 @@ export function AdminProgramsManagement() {
       if (status) params.status = status
 
       const response = await getAllAdminPrograms(params)
-      setPrograms(response.data.programs)
-      setPagination(response.data.pagination)
+      if (response && response.data) {
+        setPrograms(response.data.programs || [])
+        setPagination(response.data.pagination || null)
+      } else {
+        throw new Error('Invalid response format')
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load programs')
       console.error('Error loading programs:', err)

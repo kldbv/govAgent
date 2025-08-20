@@ -166,7 +166,7 @@ export const getAdminDashboardStats = async () => {
 
 export const getAllUsers = async (params: any) => {
   const response = await apiClient.get('/admin/users', { params }) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };
 
 export const updateUserRole = async (userId: number, role: string) => {
@@ -176,45 +176,45 @@ export const updateUserRole = async (userId: number, role: string) => {
 
 export const getAllAdminPrograms = async (params: any) => {
   const response = await apiClient.get('/admin/programs', { params }) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };
 
 export const createProgram = async (programData: any) => {
   const response = await apiClient.post('/admin/programs', programData) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };
 
 export const updateProgram = async (programId: number, programData: any) => {
   const response = await apiClient.put(`/admin/programs/${programId}`, programData) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };
 
 export const toggleProgramStatus = async (programId: number) => {
   const response = await apiClient.patch(`/admin/programs/${programId}/toggle`) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };
 
 export const updateProgramStatus = async (programId: number, status: string) => {
   const response = await apiClient.patch(`/admin/programs/${programId}/status`, { status }) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };
 
 export const deleteProgram = async (programId: number) => {
   const response = await apiClient.delete(`/admin/programs/${programId}`) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };
 
 export const getAllAdminApplications = async (params: any) => {
   const response = await apiClient.get('/admin/applications', { params }) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };
 
 export const getApplicationDetails = async (applicationId: number) => {
   const response = await apiClient.get(`/admin/applications/${applicationId}`) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };
 
 export const updateApplicationStatus = async (applicationId: number, status: string, notes?: string) => {
   const response = await apiClient.put(`/admin/applications/${applicationId}/status`, { status, notes }) as any;
-  return response.data;
+  return response; // response interceptor already returns response.data
 };

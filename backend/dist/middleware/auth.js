@@ -18,7 +18,7 @@ const authenticate = async (req, res, next) => {
             throw new errorHandler_1.AppError('JWT secret not configured', 500);
         }
         const decoded = jsonwebtoken_1.default.verify(token, resolvedSecret);
-        const result = await database_1.default.query('SELECT id, email, full_name FROM users WHERE id = $1', [decoded.userId]);
+        const result = await database_1.default.query('SELECT id, email, full_name, role FROM users WHERE id = $1', [decoded.userId]);
         if (result.rows.length === 0) {
             throw new errorHandler_1.AppError('User not found', 401);
         }

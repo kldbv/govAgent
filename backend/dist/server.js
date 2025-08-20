@@ -16,11 +16,13 @@ const chat_1 = __importDefault(require("./routes/chat"));
 const guidance_1 = __importDefault(require("./routes/guidance"));
 const analytics_1 = __importDefault(require("./routes/analytics"));
 const methodology_1 = __importDefault(require("./routes/methodology"));
+const admin_1 = __importDefault(require("./routes/admin"));
 const errorHandler_1 = require("./middleware/errorHandler");
 const migrateApplicationTables_1 = require("./utils/migrateApplicationTables");
 const migrateApplicationSubmissions_1 = require("./utils/migrateApplicationSubmissions");
 const migrateProgressTable_1 = require("./utils/migrateProgressTable");
 const ensureMVPColumns_1 = require("./utils/ensureMVPColumns");
+const addUserRoles_1 = require("./utils/addUserRoles");
 dotenv_1.default.config();
 (async () => {
     try {
@@ -28,6 +30,7 @@ dotenv_1.default.config();
         await (0, migrateApplicationSubmissions_1.createApplicationSubmissionsTable)();
         await (0, migrateProgressTable_1.createProgressTable)();
         await (0, ensureMVPColumns_1.ensureMVPColumns)();
+        await (0, addUserRoles_1.addUserRoles)();
         console.log('✅ Startup migrations completed');
     }
     catch (err) {
@@ -78,6 +81,7 @@ app.use('/api/chat', chat_1.default);
 app.use('/api/guidance', guidance_1.default);
 app.use('/api/analytics', analytics_1.default);
 app.use('/api/methodology', methodology_1.default);
+app.use('/api/admin', admin_1.default);
 app.use('*', (req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });

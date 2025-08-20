@@ -19,6 +19,8 @@ import { createApplicationSubmissionsTable } from './utils/migrateApplicationSub
 import { createProgressTable } from './utils/migrateProgressTable';
 import { ensureMVPColumns } from './utils/ensureMVPColumns';
 import { addUserRoles } from './utils/addUserRoles';
+import { createAdminUser } from './utils/createAdminUser';
+import { seedTestData } from './utils/seedTestData';
 
 dotenv.config();
 
@@ -32,6 +34,12 @@ dotenv.config();
     await ensureMVPColumns();
     // Add user roles migration
     await addUserRoles();
+    // Create default admin user
+    await createAdminUser();
+    // Seed test data in development
+    if (process.env.NODE_ENV !== 'production') {
+      await seedTestData();
+    }
     console.log('✅ Startup migrations completed');
   } catch (err) {
     console.error('❌ Startup migrations failed (continuing to start server):', err);

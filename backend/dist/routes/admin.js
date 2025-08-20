@@ -1,0 +1,23 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const AdminController_1 = require("../controllers/AdminController");
+const auth_1 = require("../middleware/auth");
+const roleAuth_1 = require("../middleware/roleAuth");
+const router = (0, express_1.Router)();
+const adminController = new AdminController_1.AdminController();
+router.use(auth_1.authenticate);
+router.get('/dashboard/stats', (0, roleAuth_1.requireAdminOrManager)(), adminController.getDashboardStats);
+router.get('/users', (0, roleAuth_1.requireAdmin)(), adminController.getAllUsers);
+router.put('/users/:userId/role', (0, roleAuth_1.requireAdmin)(), adminController.updateUserRole);
+router.get('/programs', (0, roleAuth_1.requireAdminOrManager)(), adminController.getAllPrograms);
+router.post('/programs', (0, roleAuth_1.requireAdmin)(), adminController.createProgram);
+router.put('/programs/:programId', (0, roleAuth_1.requireAdmin)(), adminController.updateProgram);
+router.patch('/programs/:programId/toggle', (0, roleAuth_1.requireAdmin)(), adminController.toggleProgramStatus);
+router.patch('/programs/:programId/status', (0, roleAuth_1.requireAdmin)(), adminController.updateProgramStatus);
+router.delete('/programs/:programId', (0, roleAuth_1.requireAdmin)(), adminController.deleteProgram);
+router.get('/applications', (0, roleAuth_1.requireAdminOrManager)(), adminController.getAllApplications);
+router.get('/applications/:applicationId', (0, roleAuth_1.requireAdminOrManager)(), adminController.getApplicationDetails);
+router.put('/applications/:applicationId/status', (0, roleAuth_1.requireAdminOrManager)(), adminController.updateApplicationStatus);
+exports.default = router;
+//# sourceMappingURL=admin.js.map
