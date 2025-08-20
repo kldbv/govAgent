@@ -33,14 +33,28 @@ export function ProgramCard({ program, showMatchScore = false, className = '' }:
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
   
+  const getSubmissionStatus = () => {
+    const now = new Date().getTime()
+    const opens = program.opens_at ? new Date(program.opens_at).getTime() : null
+    const closesBase = program.closes_at || program.application_deadline
+    const closes = closesBase ? new Date(closesBase).getTime() : null
+
+    if (opens && now < opens) return { label: 'Скоро открытие', color: 'bg-yellow-100 text-yellow-800' }
+    if (closes && now > closes) return { label: 'Закрыт', color: 'bg-red-100 text-red-800' }
+    return { label: 'Открыт', color: 'bg-green-100 text-green-800' }
+  }
+
   return (
     <div className={`card card-hover p-6 h-full flex flex-col overflow-hidden ${className}`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className={`badge ${getTypeColor(program.program_type)}`}>
               {program.program_type}
+            </span>
+            <span className={`badge ${getSubmissionStatus().color}`}>
+              {getSubmissionStatus().label}
             </span>
             {showMatchScore && program.score && (
               <span className="badge bg-blue-100 text-blue-800">

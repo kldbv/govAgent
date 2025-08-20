@@ -32,11 +32,18 @@ export const errorHandler = (
     console.error(error.stack);
   }
 
+  const extra: any = {};
+  // Surface minimal diagnostics even in production for MVP debugging
+  const anyErr: any = error as any;
+  if (anyErr?.code) extra.code = anyErr.code;
+  if (anyErr?.detail) extra.detail = anyErr.detail;
+
   res.status(statusCode).json({
     success: false,
     error: {
       message: statusCode === 500 ? 'Internal server error' : message,
       ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
+      ...extra,
     },
   });
 };

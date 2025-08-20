@@ -11,10 +11,12 @@ import referenceRoutes from './routes/reference';
 import chatRoutes from './routes/chat';
 import guidanceRoutes from './routes/guidance';
 import analyticsRoutes from './routes/analytics';
+import methodologyRoutes from './routes/methodology';
 import { errorHandler } from './middleware/errorHandler';
 import { createApplicationTables } from './utils/migrateApplicationTables';
 import { createApplicationSubmissionsTable } from './utils/migrateApplicationSubmissions';
 import { createProgressTable } from './utils/migrateProgressTable';
+import { ensureMVPColumns } from './utils/ensureMVPColumns';
 
 dotenv.config();
 
@@ -24,6 +26,8 @@ dotenv.config();
     await createApplicationTables();
     await createApplicationSubmissionsTable();
     await createProgressTable();
+    // Ensure minimal columns for MVP regardless of other migration failures
+    await ensureMVPColumns();
     console.log('✅ Startup migrations completed');
   } catch (err) {
     console.error('❌ Startup migrations failed (continuing to start server):', err);
@@ -89,6 +93,7 @@ app.use('/api/reference', referenceRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/guidance', guidanceRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/methodology', methodologyRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -98,10 +103,13 @@ app.use('*', (req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📱 CORS enabled for: ${typeof corsOptions.origin === 'string' ? corsOptions.origin : 'multiple origins'}`);
-});
+// Only start a listener when running as a standalone server (not on Vercel serverless)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📱 CORS enabled for: ${typeof corsOptions.origin === 'string' ? corsOptions.origin : 'multiple origins'}`);
+  });
+}
 
 export default app;

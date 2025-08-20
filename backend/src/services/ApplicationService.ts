@@ -79,7 +79,7 @@ interface ApplicationData {
     file_size: number;
     mime_type: string;
   }[];
-  status: 'draft' | 'submitted' | 'under_review' | 'additional_info_required' | 'approved' | 'rejected';
+  status: 'pending' | 'in_review' | 'under_review' | 'additional_info_required' | 'approved' | 'rejected' | 'draft' | 'submitted';
   submission_reference?: string;
   submitted_at?: Date;
   last_updated: Date;
@@ -363,16 +363,26 @@ export class ApplicationService {
 
   async saveApplicationDraft(applicationData: ApplicationData): Promise<number> {
     try {
+      // Upsert without relying on a pre-existing UNIQUE index to avoid migration race conditions.
+      // First try UPDATE; if no row affected, INSERT. Always return the id.
       const result = await pool.query(
-        `INSERT INTO applications (user_id, program_id, form_data, application_data, file_uploads, status, last_updated)
-         VALUES ($1, $2, $3, $3, $4, $5, NOW())
-         ON CONFLICT (user_id, program_id) 
-         DO UPDATE SET form_data = EXCLUDED.form_data,
-                       application_data = EXCLUDED.application_data,
-                       file_uploads = EXCLUDED.file_uploads,
-                       status = EXCLUDED.status,
-                       last_updated = NOW()
-         RETURNING id`,
+        `WITH updated AS (
+            UPDATE applications
+               SET form_data = $3,
+                   file_uploads = $4,
+                   status = $5,
+                   last_updated = NOW()
+             WHERE user_id = $1 AND program_id = $2
+         RETURNING id
+         ), inserted AS (
+           INSERT INTO applications (user_id, program_id, form_data, file_uploads, status, last_updated)
+           SELECT $1, $2, $3, $4, $5, NOW()
+            WHERE NOT EXISTS (SELECT 1 FROM updated)
+         RETURNING id
+        )
+        SELECT id FROM updated
+        UNION ALL
+        SELECT id FROM inserted`,
         [
           applicationData.user_id,
           applicationData.program_id,
@@ -402,7 +412,7 @@ export class ApplicationService {
       if (appRes.rows.length === 0) {
         throw new Error('Application not found');
       }
-      const currentForm = JSON.parse(appRes.rows[0].form_data || '{}');
+      const currentForm = appRes.rows[0].form_data || {};
 
       const userRes = await pool.query(`SELECT full_name, email FROM users WHERE id = $1`, [userId]);
       const profRes = await pool.query(`SELECT bin, oked_code FROM user_profiles WHERE user_id = $1`, [userId]);
@@ -420,7 +430,7 @@ export class ApplicationService {
 
       // Persist enriched form before marking submitted (write to both columns for compatibility)
       await pool.query(
-        `UPDATE applications SET form_data = $1, application_data = $1, last_updated = NOW() WHERE id = $2 AND user_id = $3`,
+        `UPDATE applications SET form_data = $1, last_updated = NOW() WHERE id = $2 AND user_id = $3`,
         [JSON.stringify(enrichedForm), applicationId, userId]
       );
 
@@ -436,7 +446,7 @@ export class ApplicationService {
              last_updated = NOW()
          WHERE id = $3 AND user_id = $4
          RETURNING program_id`,
-        ['submitted', reference, applicationId, userId]
+        ['under_review', reference, applicationId, userId]
       );
 
       if (result.rows.length === 0) {
@@ -477,8 +487,8 @@ export class ApplicationService {
         id: row.id,
         user_id: row.user_id,
         program_id: row.program_id,
-        form_data: JSON.parse(row.form_data || '{}'),
-        file_uploads: JSON.parse(row.file_uploads || '[]'),
+        form_data: row.form_data || {},
+        file_uploads: row.file_uploads || [],
         status: row.status,
         submission_reference: row.submission_reference,
         submitted_at: row.submitted_at,
@@ -513,8 +523,8 @@ export class ApplicationService {
         id: row.id,
         user_id: row.user_id,
         program_id: row.program_id,
-        form_data: JSON.parse(row.form_data || '{}'),
-        file_uploads: JSON.parse(row.file_uploads || '[]'),
+        form_data: row.form_data || {},
+        file_uploads: row.file_uploads || [],
         status: row.status,
         submission_reference: row.submission_reference,
         submitted_at: row.submitted_at,

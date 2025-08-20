@@ -13,6 +13,18 @@ const apiClient = axios.create({
   },
 })
 
+// Ensure Authorization header is always attached if a token is stored
+apiClient.interceptors.request.use((config) => {
+  const hasAuth = (config.headers as any)?.Authorization
+  if (!hasAuth) {
+    const token = (typeof window !== 'undefined') ? localStorage.getItem('token') : null
+    if (token) {
+      (config.headers as any) = { ...(config.headers as any), Authorization: `Bearer ${token}` }
+    }
+  }
+  return config
+})
+
 apiClient.interceptors.response.use(
   response => response.data,
   error => {
@@ -69,12 +81,41 @@ export const getRecommendations = async () => {
 
 // --- Applications --- //
 export const saveApplicationDraft = async (programId: number, form_data: any, file_uploads: any[] = []) => {
+  // The response interceptor returns the body already; return it as-is so callers can access `.data` field from our API shape
   const response = await apiClient.post(`/applications/program/${programId}/draft`, { form_data, file_uploads }) as any;
+  return response; // { success, data: { application_id, ... } }
+};
+
+export const uploadApplicationFiles = async (programId: number, files: File[]) => {
+  const form = new FormData();
+  files.forEach(f => form.append('files', f));
+  const token = (typeof window !== 'undefined') ? localStorage.getItem('token') : null
+  const response = await axios.post(`${API_BASE_URL}/applications/program/${programId}/files`, form, {
+    headers: { 'Content-Type': 'multipart/form-data', ...(apiClient.defaults.headers.common as any), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  }) as any;
+  return response.data ?? response; // axios without interceptor: return body; maintain compatibility
+};
+
+export const listApplicationFiles = async (applicationId: number) => {
+  const response = await apiClient.get(`/applications/${applicationId}/files`) as any;
+  return response; // { success, data: { files: [] } }
+};
+
+export const deleteApplicationFile = async (applicationId: number, fileId: number) => {
+  const response = await apiClient.delete(`/applications/${applicationId}/files/${fileId}`) as any;
   return response.data;
 };
 
 export const submitApplicationById = async (applicationId: number) => {
   const response = await apiClient.post(`/applications/${applicationId}/submit`, {}) as any;
+  return response.data;
+};
+
+export const submitApplicationForProgram = async (programId: number, form_data: any, file_uploads: any[] = []) => {
+  const token = (typeof window !== 'undefined') ? localStorage.getItem('token') : null
+  const response = await apiClient.post(`/applications/program/${programId}/submit`, { form_data, file_uploads }, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  }) as any;
   return response.data;
 };
 

@@ -13,6 +13,7 @@ class ProgramController {
         this.getPrograms = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             const { page = 1, limit = 10, program_type, target_audience, organization, search, region, oked_code, min_amount, max_amount, sort_by = 'created_at', sort_order = 'DESC' } = req.query;
             const offset = (Number(page) - 1) * Number(limit);
+            const open_only = (req.query.open_only === '1' || req.query.open_only === 'true');
             let query = `
       SELECT id, title, description, organization, program_type, target_audience,
              funding_amount, application_deadline, requirements, benefits,
@@ -43,6 +44,10 @@ class ProgramController {
                 query += ` AND (title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
                 queryParams.push(`%${search}%`);
                 paramIndex++;
+            }
+            if (open_only) {
+                query += ` AND (COALESCE(opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
+                query += ` AND (COALESCE(closes_at, application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
             }
             if (region) {
                 query += ` AND (supported_regions IS NULL OR $${paramIndex} = ANY(supported_regions))`;
@@ -99,6 +104,10 @@ class ProgramController {
                 countQuery += ` AND (title ILIKE $${countParamIndex} OR description ILIKE $${countParamIndex})`;
                 countParams.push(`%${search}%`);
                 countParamIndex++;
+            }
+            if (open_only) {
+                countQuery += ` AND (COALESCE(opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
+                countQuery += ` AND (COALESCE(closes_at, application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
             }
             const countResult = await database_1.default.query(countQuery, countParams);
             const total = parseInt(countResult.rows[0].total);
@@ -203,6 +212,7 @@ class ProgramController {
         this.searchPrograms = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             const { page = 1, limit = 12, search, program_type, organization, region, oked_code, min_funding, max_funding, business_type, business_size, sort = 'relevance' } = req.query;
             const offset = (Number(page) - 1) * Number(limit);
+            const open_only = (req.query.open_only === '1' || req.query.open_only === 'true');
             let query = `
       SELECT p.id, p.title, p.description, p.organization, p.program_type, p.target_audience,
              p.funding_amount, p.application_deadline, p.requirements, p.benefits,
@@ -234,6 +244,10 @@ class ProgramController {
                 query += ` AND (p.supported_regions IS NULL OR $${paramIndex} = ANY(p.supported_regions))`;
                 queryParams.push(region);
                 paramIndex++;
+            }
+            if (open_only) {
+                query += ` AND (COALESCE(p.opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
+                query += ` AND (COALESCE(p.closes_at, p.application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
             }
             if (oked_code) {
                 query += ` AND (p.oked_filters IS NULL OR $${paramIndex} = ANY(p.oked_filters) OR EXISTS (
@@ -313,6 +327,10 @@ class ProgramController {
                 countQuery += ` AND (p.supported_regions IS NULL OR $${countParamIndex} = ANY(p.supported_regions))`;
                 countParams.push(region);
                 countParamIndex++;
+            }
+            if (open_only) {
+                countQuery += ` AND (COALESCE(p.opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
+                countQuery += ` AND (COALESCE(p.closes_at, p.application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
             }
             const countResult = await database_1.default.query(countQuery, countParams);
             const total = parseInt(countResult.rows[0].total);

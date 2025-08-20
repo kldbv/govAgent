@@ -177,7 +177,19 @@ export function ProgramFilter({ filters, onFiltersChange, onReset }: ProgramFilt
           )}
         </div>
         
-        {/* Funding Range */}
+      {/* Open only */}
+      <div className="flex items-center justify-between">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={!!filters.open_only}
+            onChange={(e) => updateFilter('open_only', e.target.checked ? 1 : 0)}
+          />
+          <span>Только открытые</span>
+        </label>
+      </div>
+
+      {/* Funding Range */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Размер финансирования (тенге)

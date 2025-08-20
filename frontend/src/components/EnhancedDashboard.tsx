@@ -13,19 +13,31 @@ export function EnhancedDashboard() {
   
   useEffect(() => {
     const loadDashboardData = async () => {
-      if (!user?.profile) {
+      if (!user) {
         setLoading(false)
         return
       }
       
       try {
-        const [recommendationsData, applicationsData] = await Promise.all([
-          getRecommendations().catch(() => []),
-          getUserApplications({}).catch(() => ({ applications: [] }))
-        ])
+        // Load recommendations
+        try {
+          const recommendationsData = await getRecommendations()
+          setRecommendations(Array.isArray(recommendationsData) ? recommendationsData.slice(0, 3) : [])
+        } catch (recError) {
+          console.warn('Failed to load recommendations:', recError)
+          setRecommendations([])
+        }
         
-        setRecommendations(recommendationsData.slice(0, 3)) // Top 3 recommendations
-        setApplications(applicationsData.applications?.slice(0, 5) || [])
+        // Load applications
+        try {
+          const applicationsData = await getUserApplications({})
+          console.log('Applications data from API:', applicationsData)
+          const apps = applicationsData?.data?.applications || applicationsData?.applications || []
+          setApplications(Array.isArray(apps) ? apps.slice(0, 5) : [])
+        } catch (appError) {
+          console.warn('Failed to load applications:', appError)
+          setApplications([])
+        }
       } catch (error) {
         console.error('Failed to load dashboard data:', error)
       } finally {
@@ -282,7 +294,7 @@ export function EnhancedDashboard() {
                         {app.program_title || `Заявка #${app.id}`}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(app.created_at).toLocaleDateString('ru-RU')}
+                        {new Date(app.submitted_at || app.last_updated || app.created_at).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
                     <div className="ml-3 flex-shrink-0">

@@ -26,16 +26,13 @@ async function createApplicationTables() {
         program_id INTEGER NOT NULL REFERENCES business_programs(id) ON DELETE CASCADE
       )
     `);
-        await database_1.default.query(`
-      ALTER TABLE applications 
-        ADD COLUMN IF NOT EXISTS form_data JSONB NOT NULL DEFAULT '{}'::jsonb,
-        ADD COLUMN IF NOT EXISTS file_uploads JSONB DEFAULT '[]'::jsonb,
-        ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'draft',
-        ADD COLUMN IF NOT EXISTS submission_reference VARCHAR(50),
-        ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP,
-        ADD COLUMN IF NOT EXISTS last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        ADD COLUMN IF NOT EXISTS notes TEXT;
-    `);
+        await database_1.default.query(`ALTER TABLE applications ADD COLUMN IF NOT EXISTS form_data JSONB NOT NULL DEFAULT '{}'::jsonb;`);
+        await database_1.default.query(`ALTER TABLE applications ADD COLUMN IF NOT EXISTS file_uploads JSONB DEFAULT '[]'::jsonb;`);
+        await database_1.default.query(`ALTER TABLE applications ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'draft';`);
+        await database_1.default.query(`ALTER TABLE applications ADD COLUMN IF NOT EXISTS submission_reference VARCHAR(50);`);
+        await database_1.default.query(`ALTER TABLE applications ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP;`);
+        await database_1.default.query(`ALTER TABLE applications ADD COLUMN IF NOT EXISTS last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+        await database_1.default.query(`ALTER TABLE applications ADD COLUMN IF NOT EXISTS notes TEXT;`);
         await database_1.default.query(`
       ALTER TABLE applications
         ADD COLUMN IF NOT EXISTS application_data JSONB;
@@ -64,25 +61,38 @@ async function createApplicationTables() {
       END$$;
     `);
         await database_1.default.query(`
+      DO $$
+      DECLARE
+        constraint_rec RECORD;
+      BEGIN
+        -- Try standard constraint name
+        IF EXISTS (
+          SELECT 1 FROM information_schema.table_constraints 
+          WHERE table_name = 'applications' AND constraint_name = 'applications_status_check'
+        ) THEN
+          EXECUTE 'ALTER TABLE applications DROP CONSTRAINT applications_status_check';
+        END IF;
+        
+        -- Try alternative constraint names
+        FOR constraint_rec IN 
+          SELECT constraint_name FROM information_schema.table_constraints 
+          WHERE table_name = 'applications' AND constraint_name LIKE '%status%check%'
+        LOOP
+          BEGIN
+            EXECUTE 'ALTER TABLE applications DROP CONSTRAINT ' || quote_ident(constraint_rec.constraint_name);
+          EXCEPTION WHEN others THEN
+            CONTINUE;
+          END;
+        END LOOP;
+      END$$;
+    `);
+        await database_1.default.query(`
       UPDATE applications 
       SET application_data = COALESCE(application_data, form_data)
       WHERE application_data IS NULL AND form_data IS NOT NULL;
     `);
-        await database_1.default.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.constraint_column_usage ccu
-          JOIN information_schema.table_constraints tc
-            ON tc.constraint_name = ccu.constraint_name
-          WHERE tc.table_name = 'applications' AND tc.constraint_type = 'CHECK' AND tc.constraint_name = 'applications_status_check'
-        ) THEN
-          ALTER TABLE applications
-          ADD CONSTRAINT applications_status_check
-          CHECK (status IN ('draft','submitted','under_review','additional_info_required','approved','rejected'));
-        END IF;
-      END$$;
-    `);
+        await database_1.default.query(`UPDATE applications SET status = 'draft' WHERE TRIM(LOWER(status)) = 'pending';`);
+        await database_1.default.query(`UPDATE applications SET status = 'under_review' WHERE TRIM(LOWER(status)) = 'in_review';`);
         await database_1.default.query(`
       DO $$
       BEGIN
@@ -114,13 +124,31 @@ async function createApplicationTables() {
         application_id INTEGER REFERENCES applications(id) ON DELETE CASCADE,
         field_name VARCHAR(100) NOT NULL,
         original_name VARCHAR(255) NOT NULL,
-        file_path VARCHAR(500) NOT NULL,
+        file_path VARCHAR(500),
+        file_url VARCHAR(1000),
         file_size INTEGER NOT NULL,
         mime_type VARCHAR(100),
+        file_content BYTEA,
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
         console.log('Creating indexes...');
+        await database_1.default.query(`ALTER TABLE file_uploads ADD COLUMN IF NOT EXISTS file_url VARCHAR(1000);`);
+        await database_1.default.query(`ALTER TABLE file_uploads ADD COLUMN IF NOT EXISTS file_content BYTEA;`);
+        await database_1.default.query(`DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'file_uploads' AND column_name = 'file_path'
+        ) THEN
+          BEGIN
+            EXECUTE 'ALTER TABLE file_uploads ALTER COLUMN file_path DROP NOT NULL';
+          EXCEPTION WHEN others THEN
+            NULL;
+          END;
+        END IF;
+      END$$;`);
+        console.log('Indexes and constraints setup completed');
         await database_1.default.query(`
       CREATE INDEX IF NOT EXISTS idx_program_forms_expires_at ON program_forms(expires_at);
     `);

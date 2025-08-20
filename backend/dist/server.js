@@ -15,16 +15,19 @@ const reference_1 = __importDefault(require("./routes/reference"));
 const chat_1 = __importDefault(require("./routes/chat"));
 const guidance_1 = __importDefault(require("./routes/guidance"));
 const analytics_1 = __importDefault(require("./routes/analytics"));
+const methodology_1 = __importDefault(require("./routes/methodology"));
 const errorHandler_1 = require("./middleware/errorHandler");
 const migrateApplicationTables_1 = require("./utils/migrateApplicationTables");
 const migrateApplicationSubmissions_1 = require("./utils/migrateApplicationSubmissions");
 const migrateProgressTable_1 = require("./utils/migrateProgressTable");
+const ensureMVPColumns_1 = require("./utils/ensureMVPColumns");
 dotenv_1.default.config();
 (async () => {
     try {
         await (0, migrateApplicationTables_1.createApplicationTables)();
         await (0, migrateApplicationSubmissions_1.createApplicationSubmissionsTable)();
         await (0, migrateProgressTable_1.createProgressTable)();
+        await (0, ensureMVPColumns_1.ensureMVPColumns)();
         console.log('✅ Startup migrations completed');
     }
     catch (err) {
@@ -74,14 +77,17 @@ app.use('/api/reference', reference_1.default);
 app.use('/api/chat', chat_1.default);
 app.use('/api/guidance', guidance_1.default);
 app.use('/api/analytics', analytics_1.default);
+app.use('/api/methodology', methodology_1.default);
 app.use('*', (req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
 app.use(errorHandler_1.errorHandler);
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`📱 CORS enabled for: ${typeof corsOptions.origin === 'string' ? corsOptions.origin : 'multiple origins'}`);
-});
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`📱 CORS enabled for: ${typeof corsOptions.origin === 'string' ? corsOptions.origin : 'multiple origins'}`);
+    });
+}
 exports.default = app;
 //# sourceMappingURL=server.js.map

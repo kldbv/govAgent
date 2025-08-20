@@ -52,6 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('Failed to fetch user profile:', error)
       localStorage.removeItem('token')
       api.clearAuthToken()
+      setUser(null)
     } finally {
       setLoading(false)
     }
@@ -60,10 +61,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (credentials: LoginCredentials) => {
     try {
       const response = await api.login(credentials) as any
-      const { user: userData, token } = response.data
+      const { token } = response.data
       localStorage.setItem('token', token)
       api.setAuthToken(token)
-      setUser(userData)
+      // Immediately fetch full user with profile after login
+      await fetchUserProfile()
       toast.success('Успешный вход в систему!')
     } catch (error: any) {
       toast.error(error.message || 'Ошибка входа в систему')
@@ -74,10 +76,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (data: RegisterData) => {
     try {
       const response = await api.register(data) as any
-      const { user: userData, token } = response.data
+      const { token } = response.data
       localStorage.setItem('token', token)
       api.setAuthToken(token)
-      setUser(userData)
+      // Immediately fetch full user with profile after registration
+      await fetchUserProfile()
       toast.success('Регистрация прошла успешно!')
     } catch (error: any) {
       toast.error(error.message || 'Ошибка регистрации')

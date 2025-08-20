@@ -28,96 +28,119 @@ export default function Layout({ children }: LayoutProps) {
             </Link>
 
             {/* Navigation Links */}
-            <nav className="hidden md:flex items-center space-x-8">
+            <nav className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8">
+              <Link 
+                to="/grants" 
+                className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/grants') 
+                    ? 'text-primary-600 bg-primary-50' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span>Гранты</span>
+              </Link>
+              <Link 
+                to="/subsidies" 
+                className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/subsidies') 
+                    ? 'text-primary-600 bg-primary-50' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span>Субсидии</span>
+              </Link>
+              <Link 
+                to="/how-to-apply" 
+                className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/how-to-apply') 
+                    ? 'text-primary-600 bg-primary-50' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span>Методология</span>
+              </Link>
               <Link 
                 to="/" 
-                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
                   isActive('/') 
                     ? 'text-primary-600 bg-primary-50' 
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Home size={16} />
-                <span>Главная</span>
+                <span className="hidden lg:inline">Главная</span>
               </Link>
               
               <Link 
                 to="/programs" 
-                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
                   isActive('/programs') 
                     ? 'text-primary-600 bg-primary-50' 
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Search size={16} />
-                <span>Программы</span>
+                <span className="hidden lg:inline">Программы</span>
               </Link>
 
               {isAuthenticated && (
                 <>
                   <Link 
                     to="/dashboard" 
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
                       isActive('/dashboard') 
                         ? 'text-primary-600 bg-primary-50' 
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     <User size={16} />
-                    <span>Кабинет</span>
+                    <span className="hidden lg:inline">Кабинет</span>
                   </Link>
                   
                   <Link 
                     to="/recommendations" 
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
                       isActive('/recommendations') 
                         ? 'text-primary-600 bg-primary-50' 
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     <Star size={16} />
-                    <span>Рекомендации</span>
+                    <span className="hidden lg:inline">Рекомендации</span>
                   </Link>
                   
                   <Link 
                     to="/applications" 
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
                       isActive('/applications') 
                         ? 'text-primary-600 bg-primary-50' 
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     <FileText size={16} />
-                    <span>Заявки</span>
+                    <span className="hidden lg:inline">Заявки</span>
                   </Link>
                 </>
               )}
             </nav>
 
             {/* User Menu */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-2 md:gap-4">
               {isAuthenticated && user ? (
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <span className="hidden md:inline text-sm text-gray-600">
                     Привет, {user.full_name}!
                   </span>
-                  <Link 
-                    to="/profile"
-                    className="btn-ghost flex items-center space-x-1"
-                  >
-                    <User size={16} />
-                    <span>Профиль</span>
-                  </Link>
                   <button 
                     onClick={logout}
-                    className="btn-ghost flex items-center space-x-1 text-red-600 hover:text-red-700"
+                    className="btn-ghost flex items-center gap-1 text-red-600 hover:text-red-700"
                   >
                     <LogOut size={16} />
-                    <span>Выход</span>
+                    <span className="hidden sm:inline">Выход</span>
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center gap-2 md:gap-3">
                   <Link to="/login" className="btn-secondary">
                     Войти
                   </Link>

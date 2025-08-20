@@ -19,7 +19,9 @@ const bpmMigrations = [
   ADD COLUMN IF NOT EXISTS max_loan_amount DECIMAL(15, 2),
   ADD COLUMN IF NOT EXISTS oked_filters TEXT[],
   ADD COLUMN IF NOT EXISTS required_documents JSONB,
-  ADD COLUMN IF NOT EXISTS application_steps JSONB;
+  ADD COLUMN IF NOT EXISTS application_steps JSONB,
+  ADD COLUMN IF NOT EXISTS opens_at TIMESTAMP NULL,
+  ADD COLUMN IF NOT EXISTS closes_at TIMESTAMP NULL;
   `,
 
   // Create OKED codes lookup table
@@ -33,6 +35,19 @@ const bpmMigrations = [
     parent_code VARCHAR(10),
     level INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  `,
+
+  // Methodology pages table for dynamic methodology content
+  `
+  CREATE TABLE IF NOT EXISTS methodology_pages (
+    id SERIAL PRIMARY KEY,
+    slug TEXT UNIQUE NOT NULL,
+    title_ru TEXT NOT NULL,
+    body_ru TEXT NOT NULL,
+    published BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   `,
 

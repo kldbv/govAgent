@@ -1,0 +1,1 @@
+{"version":3,"file":"ensureMVPColumns.js","sourceRoot":"","sources":["../../src/utils/ensureMVPColumns.ts"],"names":[],"mappings":";;;;;AAEA,4CAUC;AAZD,0DAA8B;AAEvB,KAAK,UAAU,gBAAgB;IACpC,IAAI,CAAC;QAEH,MAAM,kBAAI,CAAC,KAAK,CACd;qDAC+C,CAChD,CAAC;IACJ,CAAC;IAAC,OAAO,GAAG,EAAE,CAAC;QACb,OAAO,CAAC,KAAK,CAAC,4CAA4C,EAAE,GAAG,CAAC,CAAC;IACnE,CAAC;AACH,CAAC"}

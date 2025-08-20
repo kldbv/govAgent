@@ -25,6 +25,7 @@ export class ProgramController {
     } = req.query;
 
     const offset = (Number(page) - 1) * Number(limit);
+    const open_only = (req.query.open_only === '1' || req.query.open_only === 'true');
     
     let query = `
       SELECT id, title, description, organization, program_type, target_audience,
@@ -65,6 +66,11 @@ export class ProgramController {
     }
 
     // New BMP-aligned filters
+    if (open_only) {
+      query += ` AND (COALESCE(opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
+      query += ` AND (COALESCE(closes_at, application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
+    }
+
     if (region) {
       query += ` AND (supported_regions IS NULL OR $${paramIndex} = ANY(supported_regions))`;
       queryParams.push(region);
@@ -135,6 +141,11 @@ export class ProgramController {
       countQuery += ` AND (title ILIKE $${countParamIndex} OR description ILIKE $${countParamIndex})`;
       countParams.push(`%${search}%`);
       countParamIndex++;
+    }
+
+    if (open_only) {
+      countQuery += ` AND (COALESCE(opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
+      countQuery += ` AND (COALESCE(closes_at, application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
     }
 
     const countResult = await pool.query(countQuery, countParams);
@@ -303,6 +314,7 @@ export class ProgramController {
     } = req.query;
 
     const offset = (Number(page) - 1) * Number(limit);
+    const open_only = (req.query.open_only === '1' || req.query.open_only === 'true');
     
     let query = `
       SELECT p.id, p.title, p.description, p.organization, p.program_type, p.target_audience,
@@ -344,6 +356,12 @@ export class ProgramController {
       query += ` AND (p.supported_regions IS NULL OR $${paramIndex} = ANY(p.supported_regions))`;
       queryParams.push(region);
       paramIndex++;
+    }
+
+    // Open only filter
+    if (open_only) {
+      query += ` AND (COALESCE(p.opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
+      query += ` AND (COALESCE(p.closes_at, p.application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
     }
 
     // OKED filter with hierarchical matching
@@ -442,6 +460,11 @@ export class ProgramController {
       countQuery += ` AND (p.supported_regions IS NULL OR $${countParamIndex} = ANY(p.supported_regions))`;
       countParams.push(region);
       countParamIndex++;
+    }
+
+    if (open_only) {
+      countQuery += ` AND (COALESCE(p.opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
+      countQuery += ` AND (COALESCE(p.closes_at, p.application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
     }
 
     const countResult = await pool.query(countQuery, countParams);

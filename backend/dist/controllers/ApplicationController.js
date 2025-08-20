@@ -8,6 +8,7 @@ const errorHandler_1 = require("../middleware/errorHandler");
 const ApplicationService_1 = require("../services/ApplicationService");
 const database_1 = __importDefault(require("../utils/database"));
 const joi_1 = __importDefault(require("joi"));
+const migrateApplicationTables_1 = require("../utils/migrateApplicationTables");
 class ApplicationController {
     constructor() {
         this.applicationService = new ApplicationService_1.ApplicationService();
@@ -47,6 +48,12 @@ class ApplicationController {
             if (!userId) {
                 throw new errorHandler_1.AppError('Authentication required', 401);
             }
+            try {
+                await (0, migrateApplicationTables_1.createApplicationTables)();
+            }
+            catch (e) {
+                console.warn('ensure tables failed (non-fatal):', e);
+            }
             const schema = joi_1.default.object({
                 form_data: joi_1.default.object().required(),
                 file_uploads: joi_1.default.array().items(joi_1.default.object({
@@ -63,6 +70,10 @@ class ApplicationController {
             }
             const { form_data, file_uploads } = value;
             try {
+                const prog = await database_1.default.query('SELECT id FROM business_programs WHERE id = $1 AND is_active = true', [Number(programId)]);
+                if (prog.rows.length === 0) {
+                    throw new errorHandler_1.AppError('Программа не найдена', 404);
+                }
                 const userResult = await database_1.default.query('SELECT id, full_name, email FROM users WHERE id = $1', [userId]);
                 const profileResult = await database_1.default.query('SELECT bin, oked_code FROM user_profiles WHERE user_id = $1', [userId]);
                 const user = userResult.rows[0] || {};
@@ -93,12 +104,22 @@ class ApplicationController {
                 });
             }
             catch (error) {
-                console.error('Error saving application draft:', error);
+                const pgCode = error?.code;
+                console.error('Error saving application draft:', { code: pgCode, error });
+                if (pgCode === '23503') {
+                    throw new errorHandler_1.AppError('Программа не найдена или недоступна', 400);
+                }
                 throw new errorHandler_1.AppError('Failed to save application draft', 500);
             }
         });
         this.submitApplication = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             const userId = req.user?.id;
+            try {
+                await (0, migrateApplicationTables_1.createApplicationTables)();
+            }
+            catch (e) {
+                console.warn('ensure tables failed (non-fatal):', e);
+            }
             const { applicationId } = req.params;
             if (!userId) {
                 throw new errorHandler_1.AppError('Authentication required', 401);
@@ -122,7 +143,72 @@ class ApplicationController {
                 }
             }
             catch (error) {
-                console.error('Error submitting application:', error);
+                const pgCode = error?.code;
+                console.error('Error submitting application:', { code: pgCode, error });
+                throw new errorHandler_1.AppError('Failed to submit application', 500);
+            }
+        });
+        this.submitApplicationForProgram = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+            const userId = req.user?.id;
+            try {
+                await (0, migrateApplicationTables_1.createApplicationTables)();
+            }
+            catch (e) {
+                console.warn('ensure tables failed (non-fatal):', e);
+            }
+            const { programId } = req.params;
+            if (!userId)
+                throw new errorHandler_1.AppError('Authentication required', 401);
+            if (!programId || isNaN(Number(programId)))
+                throw new errorHandler_1.AppError('Valid program ID is required', 400);
+            const schema = joi_1.default.object({
+                form_data: joi_1.default.object().required(),
+                file_uploads: joi_1.default.array().items(joi_1.default.object({
+                    field_name: joi_1.default.string().required(),
+                    original_name: joi_1.default.string().required(),
+                    file_path: joi_1.default.string().allow(null, ''),
+                    file_size: joi_1.default.number().required(),
+                    mime_type: joi_1.default.string().required()
+                })).default([])
+            });
+            const { error, value } = schema.validate(req.body);
+            if (error)
+                throw new errorHandler_1.AppError(error.details[0].message, 400);
+            try {
+                const prog = await database_1.default.query('SELECT id FROM business_programs WHERE id = $1 AND is_active = true', [Number(programId)]);
+                if (prog.rows.length === 0)
+                    throw new errorHandler_1.AppError('Программа не найдена', 404);
+                const userResult = await database_1.default.query('SELECT id, full_name, email FROM users WHERE id = $1', [userId]);
+                const profileResult = await database_1.default.query('SELECT bin, oked_code FROM user_profiles WHERE user_id = $1', [userId]);
+                const user = userResult.rows[0] || {};
+                const profile = profileResult.rows[0] || {};
+                const { form_data, file_uploads } = value;
+                const autoEnrichedForm = {
+                    ...form_data,
+                    bin: form_data?.bin ?? profile.bin ?? null,
+                    oked_code: form_data?.oked_code ?? profile.oked_code ?? null,
+                    name: form_data?.name ?? form_data?.applicant?.company_name ?? user.full_name ?? null,
+                    phone: form_data?.phone ?? form_data?.applicant?.phone ?? null,
+                    contact_email: form_data?.contact_email ?? form_data?.applicant?.email ?? user.email ?? null,
+                };
+                const draftId = await this.applicationService.saveApplicationDraft({
+                    user_id: userId,
+                    program_id: Number(programId),
+                    form_data: autoEnrichedForm,
+                    file_uploads,
+                    status: 'draft',
+                    last_updated: new Date(),
+                });
+                const result = await this.applicationService.submitApplication(draftId, userId);
+                if (!result.success)
+                    throw new errorHandler_1.AppError(result.message, 400);
+                res.json({ success: true, data: { application_id: draftId, reference: result.reference, message: result.message } });
+            }
+            catch (err) {
+                const pgCode = err?.code;
+                console.error('Error submitApplicationForProgram:', { code: pgCode, err });
+                if (pgCode === '23503')
+                    throw new errorHandler_1.AppError('Программа не найдена или недоступна', 400);
                 throw new errorHandler_1.AppError('Failed to submit application', 500);
             }
         });
@@ -237,6 +323,92 @@ class ApplicationController {
             catch (error) {
                 console.error('Error getting application stats:', error);
                 throw new errorHandler_1.AppError('Failed to get statistics', 500);
+            }
+        });
+        this.uploadFilesToDraft = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+            const userId = req.user?.id;
+            try {
+                await (0, migrateApplicationTables_1.createApplicationTables)();
+            }
+            catch (e) {
+                console.warn('ensure tables failed (non-fatal):', e);
+            }
+            const { programId } = req.params;
+            if (!userId) {
+                throw new errorHandler_1.AppError('Authentication required', 401);
+            }
+            if (!programId || isNaN(Number(programId))) {
+                throw new errorHandler_1.AppError('Valid program ID is required', 400);
+            }
+            const files = req.files;
+            if (!files || files.length === 0) {
+                throw new errorHandler_1.AppError('No files uploaded', 400);
+            }
+            try {
+                const prog = await database_1.default.query('SELECT id FROM business_programs WHERE id = $1 AND is_active = true', [Number(programId)]);
+                if (prog.rows.length === 0) {
+                    throw new errorHandler_1.AppError('Программа не найдена', 404);
+                }
+                const draftId = await this.applicationService.saveApplicationDraft({
+                    user_id: userId,
+                    program_id: Number(programId),
+                    form_data: {},
+                    file_uploads: [],
+                    status: 'draft',
+                    last_updated: new Date(),
+                });
+                const values = [];
+                const placeholders = [];
+                files.forEach((f, idx) => {
+                    values.push(userId, draftId, f.fieldname || 'document', f.originalname, null, f.size, f.mimetype, f.buffer);
+                    const base = idx * 8;
+                    placeholders.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8})`);
+                });
+                const insert = await database_1.default.query(`INSERT INTO file_uploads (user_id, application_id, field_name, original_name, file_path, file_size, mime_type, file_content)
+         VALUES ${placeholders.join(', ')} RETURNING id, original_name, file_size, mime_type, field_name`, values);
+                res.json({ success: true, data: { application_id: draftId, files: insert.rows } });
+            }
+            catch (error) {
+                const pgCode = error?.code;
+                console.error('Error uploading files:', { code: pgCode, error });
+                if (pgCode === '23503') {
+                    throw new errorHandler_1.AppError('Программа не найдена или недоступна', 400);
+                }
+                throw new errorHandler_1.AppError('Failed to upload files', 500);
+            }
+        });
+        this.listFiles = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+            const userId = req.user?.id;
+            const { applicationId } = req.params;
+            if (!userId)
+                throw new errorHandler_1.AppError('Authentication required', 401);
+            if (!applicationId || isNaN(Number(applicationId)))
+                throw new errorHandler_1.AppError('Valid application ID is required', 400);
+            try {
+                const result = await database_1.default.query(`SELECT id, field_name, original_name, file_size, mime_type, uploaded_at FROM file_uploads WHERE application_id = $1 AND user_id = $2 ORDER BY uploaded_at DESC`, [Number(applicationId), userId]);
+                res.json({ success: true, data: { files: result.rows } });
+            }
+            catch (error) {
+                console.error('Error listing files:', error);
+                throw new errorHandler_1.AppError('Failed to list files', 500);
+            }
+        });
+        this.deleteFile = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+            const userId = req.user?.id;
+            const { applicationId, fileId } = req.params;
+            if (!userId)
+                throw new errorHandler_1.AppError('Authentication required', 401);
+            if (!applicationId || isNaN(Number(applicationId)))
+                throw new errorHandler_1.AppError('Valid application ID is required', 400);
+            if (!fileId || isNaN(Number(fileId)))
+                throw new errorHandler_1.AppError('Valid file ID is required', 400);
+            try {
+                await database_1.default.query(`DELETE FROM file_uploads WHERE id = $1 AND application_id = $2 AND user_id = $3`, [Number(fileId), Number(applicationId), userId]);
+                res.json({ success: true });
+            }
+            catch (error) {
+                console.error('Error deleting file:', error);
+                throw new errorHandler_1.AppError('Failed to delete file', 500);
             }
         });
     }

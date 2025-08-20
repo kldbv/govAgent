@@ -184,6 +184,36 @@ async function seedDatabase() {
     }
     
     console.log(`✅ Successfully inserted ${businessPrograms.length} business support programs!`);
+
+    // Seed default methodology page if not exists
+    console.log('Ensuring default methodology page exists...');
+    await pool.query(
+      `INSERT INTO methodology_pages (slug, title_ru, body_ru, published)
+       VALUES ($1, $2, $3, TRUE)
+       ON CONFLICT (slug) DO NOTHING`,
+      [
+        'how-to-apply',
+        'Методология и инструкция по оформлению',
+        `
+<h2>Как подать заявку</h2>
+<ol>
+  <li><strong>Определите подходящую программу:</strong> Используйте фильтры по ОКЭД, региону, сумме и типу поддержки.</li>
+  <li><strong>Соберите документы:</strong> Устав, регистрация, справки, бизнес-план и др. Проверьте сроки действия.</li>
+  <li><strong>Заполните заявку:</strong> Проверяйте контактные данные и реквизиты документов.</li>
+  <li><strong>Подайте:</strong> Через портал/почту/очно. Сохраните номер заявки.</li>
+  <li><strong>Отслеживайте статус:</strong> Отвечайте на запросы оперативно.</li>
+</ol>
+<h3>Чек‑лист перед подачей</h3>
+<ul>
+  <li>Требования программы и целевая аудитория проверены</li>
+  <li>Бизнес‑план и фин. расчеты готовы</li>
+  <li>Справки свежие</li>
+  <li>Доверенности и подписи оформлены</li>
+  <li>Файлы в корректном формате (PDF)</li>
+</ul>
+        `,
+      ]
+    );
     
     // Display summary
     const programTypes = await pool.query(

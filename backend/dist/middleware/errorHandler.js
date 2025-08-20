@@ -16,11 +16,18 @@ const errorHandler = (error, req, res, next) => {
     if (process.env.NODE_ENV === 'development') {
         console.error(error.stack);
     }
+    const extra = {};
+    const anyErr = error;
+    if (anyErr?.code)
+        extra.code = anyErr.code;
+    if (anyErr?.detail)
+        extra.detail = anyErr.detail;
     res.status(statusCode).json({
         success: false,
         error: {
             message: statusCode === 500 ? 'Internal server error' : message,
             ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
+            ...extra,
         },
     });
 };

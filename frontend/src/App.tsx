@@ -10,6 +10,11 @@ import DashboardPage from '@/pages/DashboardPage'
 import ProfilePage from '@/pages/ProfilePage'
 import ApplicationsPage from '@/pages/ApplicationsPage'
 import RecommendationsPage from '@/pages/RecommendationsPage'
+import GrantsPage from '@/pages/GrantsPage'
+import SubsidiesPage from '@/pages/SubsidiesPage'
+import HowToApplyPage from '@/pages/HowToApplyPage'
+import InstructionsPage from '@/pages/InstructionsPage'
+import AdminMethodologyPage from '@/pages/AdminMethodologyPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuthContext()
@@ -29,6 +34,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function InstructionsProgramRoute() {
+  // Thin wrapper to render the instructions component under route
+  return <InstructionsPage />
+}
+
 function AppRoutes() {
   return (
     <Layout>
@@ -38,6 +48,10 @@ function AppRoutes() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/programs" element={<ProgramsPage />} />
         <Route path="/programs/:id" element={<ProgramDetailPage />} />
+        <Route path="/programs/:programId/instructions" element={<InstructionsProgramRoute />} />
+        <Route path="/grants" element={<GrantsPage />} />
+        <Route path="/subsidies" element={<SubsidiesPage />} />
+        <Route path="/how-to-apply" element={<HowToApplyPage />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={
@@ -58,6 +72,11 @@ function AppRoutes() {
         <Route path="/recommendations" element={
           <ProtectedRoute>
             <RecommendationsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/methodology" element={
+          <ProtectedRoute>
+            <AdminMethodologyPage />
           </ProtectedRoute>
         } />
       </Routes>

@@ -12,6 +12,8 @@ export interface BusinessProgram {
   application_process: string
   contact_info: string
   created_at: string
+  opens_at?: string
+  closes_at?: string
   score?: number
   matchReasons?: string[]
   // New BPM fields
@@ -42,6 +44,7 @@ export interface ProgramFilter {
   business_type?: string
   business_size?: string
   search?: string
+  open_only?: number | boolean
 }
 
 export interface ProgramStats {
