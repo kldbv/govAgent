@@ -169,8 +169,10 @@ export class AdminController {
 
     try {
       let query = `
-        SELECT id, title, organization, program_type, funding_amount, 
-               application_deadline, is_active, created_at, updated_at
+        SELECT id, title as name, description, organization, program_type, funding_amount, 
+               application_deadline, requirements as eligibility_criteria, is_active, 
+               created_at, updated_at,
+               CASE WHEN is_active THEN 'active' ELSE 'inactive' END as status
         FROM business_programs
         WHERE 1=1
       `;
@@ -199,7 +201,10 @@ export class AdminController {
 
       // Get total count
       const countQuery = query.replace(
-        'SELECT id, title, organization, program_type, funding_amount, application_deadline, is_active, created_at, updated_at',
+        `SELECT id, title as name, description, organization, program_type, funding_amount, 
+               application_deadline, requirements as eligibility_criteria, is_active, 
+               created_at, updated_at,
+               CASE WHEN is_active THEN 'active' ELSE 'inactive' END as status`,
         'SELECT COUNT(*)'
       );
       const totalResult = await pool.query(countQuery, params);
@@ -254,6 +259,43 @@ export class AdminController {
     }
   });
 
+  updateProgramStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { programId } = req.params;
+    const { status } = req.body;
+
+    const schema = Joi.object({
+      status: Joi.string().valid('active', 'inactive', 'draft').required()
+    });
+
+    const { error } = schema.validate({ status });
+    if (error) {
+      throw new AppError(error.details[0].message, 400);
+    }
+
+    try {
+      // Map frontend status to backend is_active field
+      const isActive = status === 'active';
+      
+      const result = await pool.query(
+        'UPDATE business_programs SET is_active = $1, updated_at = NOW() WHERE id = $2 RETURNING id, title, is_active',
+        [isActive, programId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new AppError('Program not found', 404);
+      }
+
+      res.json({
+        success: true,
+        message: 'Program status updated successfully',
+        data: { program: result.rows[0] }
+      });
+    } catch (error) {
+      console.error('Error updating program status:', error);
+      throw new AppError('Failed to update program status', 500);
+    }
+  });
+
   // Application Management
   getAllApplications = asyncHandler(async (req: AuthRequest, res: Response) => {
     const { page = 1, limit = 20, status, program_id } = req.query;
@@ -261,9 +303,12 @@ export class AdminController {
     try {
       let query = `
         SELECT a.id, a.user_id, a.program_id, a.status, a.submitted_at, a.last_updated,
-               a.submission_reference, a.notes,
+               a.submission_reference, a.notes, a.form_data,
                u.full_name as user_name, u.email as user_email,
-               bp.title as program_title, bp.organization
+               bp.title as program_name, bp.organization,
+               COALESCE(a.form_data->>'business_plan_summary', '') as business_plan_summary,
+               COALESCE(a.form_data->>'funding_request', '') as funding_request,
+               COALESCE(a.form_data->>'expected_roi', '') as expected_roi
         FROM applications a
         JOIN users u ON a.user_id = u.id
         JOIN business_programs bp ON a.program_id = bp.id
@@ -289,9 +334,12 @@ export class AdminController {
       // Get total count
       const countQuery = query.replace(
         `SELECT a.id, a.user_id, a.program_id, a.status, a.submitted_at, a.last_updated,
-               a.submission_reference, a.notes,
+               a.submission_reference, a.notes, a.form_data,
                u.full_name as user_name, u.email as user_email,
-               bp.title as program_title, bp.organization`,
+               bp.title as program_name, bp.organization,
+               COALESCE(a.form_data->>'business_plan_summary', '') as business_plan_summary,
+               COALESCE(a.form_data->>'funding_request', '') as funding_request,
+               COALESCE(a.form_data->>'expected_roi', '') as expected_roi`,
         'SELECT COUNT(*)'
       );
       const totalResult = await pool.query(countQuery, params);
@@ -327,7 +375,7 @@ export class AdminController {
     const { status, notes } = req.body;
 
     const schema = Joi.object({
-      status: Joi.string().valid('draft', 'under_review', 'approved', 'rejected').required(),
+      status: Joi.string().valid('pending', 'draft', 'under_review', 'approved', 'rejected').required(),
       notes: Joi.string().max(1000).allow('', null).optional()
     });
 
@@ -367,7 +415,13 @@ export class AdminController {
       const result = await pool.query(`
         SELECT a.*, 
                u.full_name as user_name, u.email as user_email,
-               bp.title as program_title, bp.organization,
+               bp.title as program_name, bp.organization,
+               p.business_type, p.business_size, p.industry, p.region,
+               p.current_revenue, p.employees_count,
+               COALESCE(a.form_data->>'business_plan_summary', '') as business_plan_summary,
+               COALESCE(a.form_data->>'funding_request', '') as funding_request,
+               COALESCE(a.form_data->>'expected_roi', '') as expected_roi,
+               COALESCE(a.form_data->>'timeline', '') as timeline,
                COALESCE(
                  (SELECT json_agg(
                    json_build_object(
@@ -383,6 +437,7 @@ export class AdminController {
                ) as files
         FROM applications a
         JOIN users u ON a.user_id = u.id
+        LEFT JOIN user_profiles p ON u.id = p.user_id
         JOIN business_programs bp ON a.program_id = bp.id
         WHERE a.id = $1
       `, [applicationId]);
@@ -404,18 +459,11 @@ export class AdminController {
   // Program Management
   createProgram = asyncHandler(async (req: AuthRequest, res: Response) => {
     const schema = Joi.object({
-      title: Joi.string().required(),
+      name: Joi.string().required(),
       description: Joi.string().required(),
-      organization: Joi.string().required(),
-      program_type: Joi.string().valid('grant', 'loan', 'subsidy', 'other').required(),
-      funding_amount: Joi.number().min(0).required(),
-      application_deadline: Joi.date().iso().required(),
-      requirements: Joi.string().required(),
-      benefits: Joi.string().required(),
-      application_process: Joi.string().required(),
-      eligible_regions: Joi.array().items(Joi.string()).optional(),
-      required_documents: Joi.array().items(Joi.string()).optional(),
-      is_active: Joi.boolean().default(true)
+      eligibility_criteria: Joi.string().required(),
+      funding_amount: Joi.string().required(),
+      application_deadline: Joi.date().iso().required()
     });
 
     const { error, value } = schema.validate(req.body);
@@ -432,10 +480,18 @@ export class AdminController {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
         RETURNING *
       `, [
-        value.title, value.description, value.organization, value.program_type,
-        value.funding_amount, value.application_deadline, value.requirements,
-        value.benefits, value.application_process, value.eligible_regions || [],
-        value.required_documents || [], value.is_active
+        value.name, // Map name to title
+        value.description, 
+        'Government Program', // Default organization
+        'grant', // Default program_type
+        value.funding_amount, 
+        value.application_deadline, 
+        value.eligibility_criteria, // Map eligibility_criteria to requirements
+        'Financial support for business development', // Default benefits
+        'Submit application through the platform', // Default application_process
+        [], // Default eligible_regions
+        [], // Default required_documents
+        true // Default is_active
       ]);
 
       res.status(201).json({
@@ -453,18 +509,11 @@ export class AdminController {
     const { programId } = req.params;
     
     const schema = Joi.object({
-      title: Joi.string().optional(),
+      name: Joi.string().optional(),
       description: Joi.string().optional(),
-      organization: Joi.string().optional(),
-      program_type: Joi.string().valid('grant', 'loan', 'subsidy', 'other').optional(),
-      funding_amount: Joi.number().min(0).optional(),
-      application_deadline: Joi.date().iso().optional(),
-      requirements: Joi.string().optional(),
-      benefits: Joi.string().optional(),
-      application_process: Joi.string().optional(),
-      eligible_regions: Joi.array().items(Joi.string()).optional(),
-      required_documents: Joi.array().items(Joi.string()).optional(),
-      is_active: Joi.boolean().optional()
+      eligibility_criteria: Joi.string().optional(),
+      funding_amount: Joi.string().optional(),
+      application_deadline: Joi.date().iso().optional()
     });
 
     const { error, value } = schema.validate(req.body);
@@ -477,8 +526,15 @@ export class AdminController {
       const params = [];
       let paramIndex = 1;
 
+      // Map frontend fields to backend fields
+      const fieldMapping: {[key: string]: string} = {
+        name: 'title',
+        eligibility_criteria: 'requirements'
+      };
+
       Object.entries(value).forEach(([key, val]) => {
-        updateFields.push(`${key} = $${paramIndex}`);
+        const dbField = fieldMapping[key] || key;
+        updateFields.push(`${dbField} = $${paramIndex}`);
         params.push(val);
         paramIndex++;
       });

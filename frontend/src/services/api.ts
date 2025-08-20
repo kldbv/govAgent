@@ -194,6 +194,11 @@ export const toggleProgramStatus = async (programId: number) => {
   return response.data;
 };
 
+export const updateProgramStatus = async (programId: number, status: string) => {
+  const response = await apiClient.patch(`/admin/programs/${programId}/status`, { status }) as any;
+  return response.data;
+};
+
 export const deleteProgram = async (programId: number) => {
   const response = await apiClient.delete(`/admin/programs/${programId}`) as any;
   return response.data;

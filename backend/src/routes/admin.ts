@@ -21,6 +21,7 @@ router.get('/programs', requireAdminOrManager(), adminController.getAllPrograms)
 router.post('/programs', requireAdmin(), adminController.createProgram);
 router.put('/programs/:programId', requireAdmin(), adminController.updateProgram);
 router.patch('/programs/:programId/toggle', requireAdmin(), adminController.toggleProgramStatus);
+router.patch('/programs/:programId/status', requireAdmin(), adminController.updateProgramStatus);
 router.delete('/programs/:programId', requireAdmin(), adminController.deleteProgram);
 
 // Application management - admin and manager can view/update
