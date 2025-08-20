@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { 
   Search, 
   Filter, 
@@ -56,11 +57,12 @@ interface ApplicationDetails extends Application {
 }
 
 export function AdminApplicationsManagement() {
+  const [searchParams] = useSearchParams()
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<ApplicationsResponse['pagination'] | null>(null)
   const [selectedApplication, setSelectedApplication] = useState<ApplicationDetails | null>(null)

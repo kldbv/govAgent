@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { 
   Search, 
   Filter, 
@@ -49,6 +50,7 @@ interface ProgramForm {
 }
 
 export function AdminProgramsManagement() {
+  const location = useLocation()
   const [programs, setPrograms] = useState<Program[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -56,7 +58,7 @@ export function AdminProgramsManagement() {
   const [statusFilter, setStatusFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<ProgramsResponse['pagination'] | null>(null)
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(location.pathname.includes('/new'))
   const [editingProgram, setEditingProgram] = useState<Program | null>(null)
   const [actionLoading, setActionLoading] = useState<{[key: number | string]: boolean}>({})
 
