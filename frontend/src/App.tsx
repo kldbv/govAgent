@@ -15,6 +15,7 @@ import SubsidiesPage from '@/pages/SubsidiesPage'
 import HowToApplyPage from '@/pages/HowToApplyPage'
 import InstructionsPage from '@/pages/InstructionsPage'
 import AdminMethodologyPage from '@/pages/AdminMethodologyPage'
+import { AdminDashboardPage, AdminUsersPage, AdminProgramsPage, AdminApplicationsPage } from '@/pages/AdminPages'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuthContext()
@@ -29,6 +30,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+  
+  return <>{children}</>
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuthContext()
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading-spinner"></div>
+      </div>
+    )
+  }
+  
+  if (!user || !['admin', 'manager'].includes(user.role)) {
+    return <Navigate to="/dashboard" replace />
   }
   
   return <>{children}</>
@@ -96,6 +115,33 @@ function AppRoutes() {
           <ProtectedRoute>
             <AdminMethodologyPage />
           </ProtectedRoute>
+        } />
+        
+        {/* Admin routes */}
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminDashboardPage />
+          </AdminRoute>
+        } />
+        <Route path="/admin/dashboard" element={
+          <AdminRoute>
+            <AdminDashboardPage />
+          </AdminRoute>
+        } />
+        <Route path="/admin/users" element={
+          <AdminRoute>
+            <AdminUsersPage />
+          </AdminRoute>
+        } />
+        <Route path="/admin/programs" element={
+          <AdminRoute>
+            <AdminProgramsPage />
+          </AdminRoute>
+        } />
+        <Route path="/admin/applications" element={
+          <AdminRoute>
+            <AdminApplicationsPage />
+          </AdminRoute>
         } />
       </Routes>
     </Layout>

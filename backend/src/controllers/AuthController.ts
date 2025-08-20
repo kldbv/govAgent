@@ -103,7 +103,7 @@ export class AuthController {
 
     // Find user
     const result = await pool.query(
-      'SELECT id, email, password, full_name FROM users WHERE email = $1',
+      'SELECT id, email, password, full_name, role FROM users WHERE email = $1',
       [email]
     );
 
@@ -139,6 +139,7 @@ export class AuthController {
           id: user.id,
           email: user.email,
           full_name: user.full_name,
+          role: user.role || 'user',
         },
         token,
       },
@@ -150,7 +151,7 @@ export class AuthController {
 
     // Get user with profile
     const userResult = await pool.query(
-      `SELECT u.id, u.email, u.full_name, u.created_at,
+      `SELECT u.id, u.email, u.full_name, u.created_at, u.role,
               p.user_id AS profile_user_id,
               p.business_type, p.business_size, p.industry, p.region,
               p.experience_years, p.annual_revenue, p.employee_count,
@@ -171,6 +172,7 @@ export class AuthController {
           email: row.email,
           full_name: row.full_name,
           created_at: row.created_at,
+          role: row.role || 'user',
           profile: row.profile_user_id ? {
             business_type: row.business_type,
             business_size: row.business_size,

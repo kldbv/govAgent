@@ -12,11 +12,13 @@ import chatRoutes from './routes/chat';
 import guidanceRoutes from './routes/guidance';
 import analyticsRoutes from './routes/analytics';
 import methodologyRoutes from './routes/methodology';
+import adminRoutes from './routes/admin';
 import { errorHandler } from './middleware/errorHandler';
 import { createApplicationTables } from './utils/migrateApplicationTables';
 import { createApplicationSubmissionsTable } from './utils/migrateApplicationSubmissions';
 import { createProgressTable } from './utils/migrateProgressTable';
 import { ensureMVPColumns } from './utils/ensureMVPColumns';
+import { addUserRoles } from './utils/addUserRoles';
 
 dotenv.config();
 
@@ -28,6 +30,8 @@ dotenv.config();
     await createProgressTable();
     // Ensure minimal columns for MVP regardless of other migration failures
     await ensureMVPColumns();
+    // Add user roles migration
+    await addUserRoles();
     console.log('✅ Startup migrations completed');
   } catch (err) {
     console.error('❌ Startup migrations failed (continuing to start server):', err);
@@ -94,6 +98,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/guidance', guidanceRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/methodology', methodologyRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

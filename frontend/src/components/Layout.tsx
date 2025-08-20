@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '@/hooks/useAuth'
-import { User, LogOut, Search, Home, FileText, Star } from 'lucide-react'
+import { User, LogOut, Search, Home, FileText, Star, Shield } from 'lucide-react'
 import { ChatWidget } from './ChatWidget'
 
 interface LayoutProps {
@@ -122,6 +122,20 @@ export default function Layout({ children }: LayoutProps) {
                     <FileText size={16} />
                     <span className="hidden lg:inline">Заявки</span>
                   </Link>
+                  
+                  {user && ['admin', 'manager'].includes(user.role) && (
+                    <Link 
+                      to="/admin" 
+                      className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                        location.pathname.startsWith('/admin') 
+                          ? 'text-primary-600 bg-primary-50' 
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <Shield size={16} />
+                      <span className="hidden lg:inline">Админ</span>
+                    </Link>
+                  )}
                 </>
               )}
             </nav>

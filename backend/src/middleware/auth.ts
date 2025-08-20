@@ -8,6 +8,7 @@ export interface AuthRequest extends Request {
     id: number;
     email: string;
     full_name: string;
+    role: string;
   };
 }
 
@@ -34,7 +35,7 @@ export const authenticate = async (
     
     // Get user from database
     const result = await pool.query(
-      'SELECT id, email, full_name FROM users WHERE id = $1',
+      'SELECT id, email, full_name, role FROM users WHERE id = $1',
       [decoded.userId]
     );
 
