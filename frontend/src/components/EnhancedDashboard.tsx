@@ -301,12 +301,12 @@ export function EnhancedDashboard() {
                       <span className={`badge ${
                         app.status === 'approved' ? 'bg-green-100 text-green-800' :
                         app.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        app.status === 'in_review' ? 'bg-yellow-100 text-yellow-800' :
+                        app.status === 'under_review' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {app.status === 'approved' ? 'Одобрено' :
                          app.status === 'rejected' ? 'Отклонено' :
-                         app.status === 'in_review' ? 'На рассмотрении' : 'Черновик'
+                         app.status === 'under_review' ? 'На рассмотрении' : 'Черновик'
                         }
                       </span>
                     </div>
@@ -337,7 +337,7 @@ export function EnhancedDashboard() {
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Активных заявок</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {applications.filter(app => ['submitted', 'in_review'].includes(app.status)).length}
+                    {applications.filter(app => ['submitted', 'under_review'].includes(app.status)).length}
                   </span>
                 </div>
                 <div className="flex justify-between">

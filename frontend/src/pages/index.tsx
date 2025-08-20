@@ -529,7 +529,7 @@ export function ApplicationsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'submitted':
-      case 'in_review':
+      case 'under_review':
         return 'bg-yellow-100 text-yellow-800'
       case 'approved':
         return 'bg-green-100 text-green-800'
@@ -548,7 +548,7 @@ export function ApplicationsPage() {
         return 'Черновик'
       case 'submitted':
         return 'Подана'
-      case 'in_review':
+      case 'under_review':
         return 'На рассмотрении'
       case 'approved':
         return 'Одобрена'
