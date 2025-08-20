@@ -59,17 +59,19 @@ export default function Layout({ children }: LayoutProps) {
               >
                 <span>Методология</span>
               </Link>
-              <Link 
-                to="/" 
-                className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/') 
-                    ? 'text-primary-600 bg-primary-50' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Home size={16} />
-                <span className="hidden lg:inline">Главная</span>
-              </Link>
+              {!isAuthenticated && (
+                <Link 
+                  to="/" 
+                  className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/') 
+                      ? 'text-primary-600 bg-primary-50' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Home size={16} />
+                  <span className="hidden lg:inline">Главная</span>
+                </Link>
+              )}
               
               <Link 
                 to="/programs" 
@@ -128,9 +130,6 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-2 md:gap-4">
               {isAuthenticated && user ? (
                 <div className="flex items-center gap-2 md:gap-3">
-                  <span className="hidden md:inline text-sm text-gray-600">
-                    Привет, {user.full_name}!
-                  </span>
                   <button 
                     onClick={logout}
                     className="btn-ghost flex items-center gap-1 text-red-600 hover:text-red-700"

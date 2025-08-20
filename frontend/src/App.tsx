@@ -39,11 +39,29 @@ function InstructionsProgramRoute() {
   return <InstructionsPage />
 }
 
+function HomeRoute() {
+  const { isAuthenticated, loading } = useAuthContext()
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading-spinner"></div>
+      </div>
+    )
+  }
+  
+  if (isAuthenticated) {
+    return <Navigate to="/programs" replace />
+  }
+  
+  return <HomePage />
+}
+
 function AppRoutes() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/programs" element={<ProgramsPage />} />
