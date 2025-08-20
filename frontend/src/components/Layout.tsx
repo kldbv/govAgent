@@ -29,36 +29,41 @@ export default function Layout({ children }: LayoutProps) {
 
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8">
-              <Link 
-                to="/grants" 
-                className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/grants') 
-                    ? 'text-primary-600 bg-primary-50' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <span>Гранты</span>
-              </Link>
-              <Link 
-                to="/subsidies" 
-                className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/subsidies') 
-                    ? 'text-primary-600 bg-primary-50' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <span>Субсидии</span>
-              </Link>
-              <Link 
-                to="/how-to-apply" 
-                className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/how-to-apply') 
-                    ? 'text-primary-600 bg-primary-50' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <span>Методология</span>
-              </Link>
+              {/* Show public links only for non-admins */}
+              {(!user || user.role !== 'admin') && (
+                <>
+                  <Link 
+                    to="/grants" 
+                    className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive('/grants') 
+                        ? 'text-primary-600 bg-primary-50' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <span>Гранты</span>
+                  </Link>
+                  <Link 
+                    to="/subsidies" 
+                    className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive('/subsidies') 
+                        ? 'text-primary-600 bg-primary-50' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <span>Субсидии</span>
+                  </Link>
+                  <Link 
+                    to="/how-to-apply" 
+                    className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive('/how-to-apply') 
+                        ? 'text-primary-600 bg-primary-50' 
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <span>Методология</span>
+                  </Link>
+                </>
+              )}
               {!isAuthenticated && (
                 <Link 
                   to="/" 
@@ -87,41 +92,46 @@ export default function Layout({ children }: LayoutProps) {
 
               {isAuthenticated && (
                 <>
-                  <Link 
-                    to="/dashboard" 
-                    className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive('/dashboard') 
-                        ? 'text-primary-600 bg-primary-50' 
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <User size={16} />
-                    <span className="hidden lg:inline">Кабинет</span>
-                  </Link>
-                  
-                  <Link 
-                    to="/recommendations" 
-                    className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive('/recommendations') 
-                        ? 'text-primary-600 bg-primary-50' 
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <Star size={16} />
-                    <span className="hidden lg:inline">Рекомендации</span>
-                  </Link>
-                  
-                  <Link 
-                    to="/applications" 
-                    className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive('/applications') 
-                        ? 'text-primary-600 bg-primary-50' 
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <FileText size={16} />
-                    <span className="hidden lg:inline">Заявки</span>
-                  </Link>
+                  {/* Show user-specific links only for non-admins */}
+                  {user?.role !== 'admin' && (
+                    <>
+                      <Link 
+                        to="/dashboard" 
+                        className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                          isActive('/dashboard') 
+                            ? 'text-primary-600 bg-primary-50' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <User size={16} />
+                        <span className="hidden lg:inline">Кабинет</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/recommendations" 
+                        className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                          isActive('/recommendations') 
+                            ? 'text-primary-600 bg-primary-50' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <Star size={16} />
+                        <span className="hidden lg:inline">Рекомендации</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/applications" 
+                        className={`flex items-center gap-1 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                          isActive('/applications') 
+                            ? 'text-primary-600 bg-primary-50' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <FileText size={16} />
+                        <span className="hidden lg:inline">Заявки</span>
+                      </Link>
+                    </>
+                  )}
                   
                   {user && ['admin', 'manager'].includes(user.role) && (
                     <Link 

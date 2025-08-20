@@ -59,7 +59,7 @@ function InstructionsProgramRoute() {
 }
 
 function HomeRoute() {
-  const { isAuthenticated, loading } = useAuthContext()
+  const { isAuthenticated, loading, user } = useAuthContext()
   
   if (loading) {
     return (
@@ -70,6 +70,10 @@ function HomeRoute() {
   }
   
   if (isAuthenticated) {
+    // Redirect admins to admin panel, regular users to programs
+    if (user?.role === 'admin') {
+      return <Navigate to="/admin" replace />
+    }
     return <Navigate to="/programs" replace />
   }
   
