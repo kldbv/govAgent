@@ -7,7 +7,7 @@ import { BusinessGoalsStep } from '@/components/BusinessGoalsStep'
 import { EnhancedProgramsPage } from '@/components/EnhancedProgramsPage'
 import { EnhancedDashboard } from '@/components/EnhancedDashboard'
 import { BusinessProgram } from '@/types/program'
-import { getProgramById } from '@/services/api'
+import { getProgramById, getUserApplications } from '@/services/api'
 import { ApplicationWizard } from '@/components/ApplicationWizard'
 
 // LoginPage
@@ -246,6 +246,24 @@ export function ProgramDetailPage() {
 
           <h2 className="text-lg font-semibold mb-2">Процесс подачи</h2>
           <p className="text-gray-700 whitespace-pre-line">{program.application_process}</p>
+
+          <div className="mt-6">
+            <button
+              className="btn-primary"
+              onClick={() => {
+                // open application wizard
+                setShowWizard(true)
+              }}
+            >
+              Подать заявку
+            </button>
+            <a
+              className="btn-secondary ml-3 inline-block"
+              href={`/programs/${program.id}/instructions`}
+            >
+              Инструкция по оформлению
+            </a>
+          </div>
         </div>
 
         {/* Sidebar */}
@@ -482,11 +500,202 @@ export function ProfilePage() {
 }
 
 export function ApplicationsPage() {
+  const [applications, setApplications] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const loadApplications = async () => {
+      try {
+        setLoading(true)
+        const response = await getUserApplications({})
+        const apps = response?.data?.applications || response?.applications || []
+        setApplications(apps)
+      } catch (err: any) {
+        console.error('Ошибка загрузки заявок:', err)
+        setError(err.message || 'Не удалось загрузить заявки')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadApplications()
+  }, [])
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ru-RU')
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'submitted':
+      case 'in_review':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'approved':
+        return 'bg-green-100 text-green-800'
+      case 'rejected':
+        return 'bg-red-100 text-red-800'
+      case 'draft':
+        return 'bg-gray-100 text-gray-800'
+      default:
+        return 'bg-blue-100 text-blue-800'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'Черновик'
+      case 'submitted':
+        return 'Подана'
+      case 'in_review':
+        return 'На рассмотрении'
+      case 'approved':
+        return 'Одобрена'
+      case 'rejected':
+        return 'Отклонена'
+      default:
+        return status
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-3xl font-bold mb-8">Мои заявки</h1>
+        <div className="card p-8 text-center">
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-gray-600">Загружаем ваши заявки...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-3xl font-bold mb-8">Мои заявки</h1>
+        <div className="card p-8 text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn-primary"
+          >
+            Обновить страницу
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (applications.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-3xl font-bold mb-8">Мои заявки</h1>
+        <div className="card p-8 text-center">
+          <p className="text-gray-600 mb-4">У вас пока нет поданных заявок</p>
+          <Link to="/programs" className="btn-primary inline-block">
+            Найти программы поддержки
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold mb-8">Мои заявки</h1>
-      <div className="card p-8 text-center">
-        <p className="text-gray-600">У вас пока нет поданных заявок</p>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Мои заявки</h1>
+        <p className="text-gray-600">Всего: {applications.length}</p>
+      </div>
+      
+      <div className="grid gap-6">
+        {applications.map((app) => (
+          <div key={app.id} className="card p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  {app.program_title || `Программа #${app.program_id}`}
+                </h3>
+                {app.organization && (
+                  <p className="text-sm text-gray-600 mb-2">{app.organization}</p>
+                )}
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>Заявка №{app.id}</span>
+                  <span>•</span>
+                  <span>Подана: {formatDate(app.submitted_at || app.last_updated)}</span>
+                  {app.submission_reference && (
+                    <>
+                      <span>•</span>
+                      <span>Номер: {app.submission_reference}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="ml-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
+                  {getStatusText(app.status)}
+                </span>
+              </div>
+            </div>
+            
+            {app.form_data && (
+              <div className="bg-gray-50 rounded-md p-4 mb-4">
+                <h4 className="font-medium mb-2">Данные заявки:</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  {app.form_data.applicant?.company_name && (
+                    <div>
+                      <span className="text-gray-600">Компания:</span>
+                      <span className="ml-2 font-medium">{app.form_data.applicant.company_name}</span>
+                    </div>
+                  )}
+                  {app.form_data.applicant?.contact_person && (
+                    <div>
+                      <span className="text-gray-600">Контакт:</span>
+                      <span className="ml-2 font-medium">{app.form_data.applicant.contact_person}</span>
+                    </div>
+                  )}
+                  {app.form_data.applicant?.email && (
+                    <div>
+                      <span className="text-gray-600">Email:</span>
+                      <span className="ml-2 font-medium">{app.form_data.applicant.email}</span>
+                    </div>
+                  )}
+                  {app.form_data.applicant?.phone && (
+                    <div>
+                      <span className="text-gray-600">Телефон:</span>
+                      <span className="ml-2 font-medium">{app.form_data.applicant.phone}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                {app.notes && (
+                  <span>Примечания: {app.notes}</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {app.status === 'draft' && (
+                  <Link 
+                    to={`/programs/${app.program_id}`} 
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    Продолжить →
+                  </Link>
+                )}
+                <Link 
+                  to={`/programs/${app.program_id}`} 
+                  className="text-gray-600 hover:text-gray-800 text-sm"
+                >
+                  Просмотр программы
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
