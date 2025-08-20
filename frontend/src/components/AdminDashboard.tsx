@@ -24,8 +24,10 @@ export function AdminDashboard() {
     const loadStats = async () => {
       try {
         setLoading(true)
+        console.log('Loading admin dashboard stats...')
         const data = await getAdminDashboardStats()
-        setStats(data.data)
+        console.log('Admin dashboard stats response:', data)
+        setStats(data)
       } catch (err: any) {
         setError(err.message || 'Failed to load statistics')
         console.error('Error loading dashboard stats:', err)

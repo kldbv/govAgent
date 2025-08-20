@@ -158,8 +158,10 @@ export const searchPrograms = async (filters: ProgramFilter) => {
 
 // --- Admin API --- //
 export const getAdminDashboardStats = async () => {
+  console.log('Making admin dashboard stats API call...');
   const response = await apiClient.get('/admin/dashboard/stats') as any;
-  return response.data;
+  console.log('Admin dashboard stats API response:', response);
+  return response;
 };
 
 export const getAllUsers = async (params: any) => {
