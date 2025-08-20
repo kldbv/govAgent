@@ -27,7 +27,9 @@ export function AdminDashboard() {
         console.log('Loading admin dashboard stats...')
         const data = await getAdminDashboardStats()
         console.log('Admin dashboard stats response:', data)
-        setStats(data)
+        console.log('Admin dashboard stats data structure:', JSON.stringify(data, null, 2))
+        // Data comes back with { success, data: { overview, applications_by_status, programs_by_type } }
+        setStats(data.data || data)
       } catch (err: any) {
         setError(err.message || 'Failed to load statistics')
         console.error('Error loading dashboard stats:', err)
