@@ -9,14 +9,6 @@ interface ProgramCardProps {
 }
 
 export function ProgramCard({ program, showMatchScore = false, className = '' }: ProgramCardProps) {
-  const formatAmount = (amount?: number) => {
-    if (!amount) return 'Не указано'
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'KZT',
-      minimumFractionDigits: 0,
-    }).format(amount)
-  }
   
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Не указан'
@@ -48,9 +40,16 @@ export function ProgramCard({ program, showMatchScore = false, className = '' }:
   const formatAmountShort = (amount?: number) => {
     if (!amount) return 'Не указано'
     if (amount >= 1000000) {
-      return `${(amount / 1000000).toFixed(1)} млн KZT`
+      const millions = amount / 1000000
+      const formatted = millions % 1 === 0 ? millions.toString() : millions.toFixed(1)
+      return `${formatted} млн ₸`
     }
-    return formatAmount(amount)
+    if (amount >= 1000) {
+      const thousands = amount / 1000
+      const formatted = thousands % 1 === 0 ? thousands.toString() : thousands.toFixed(1)
+      return `${formatted} тыс ₸`
+    }
+    return `${amount} ₸`
   }
 
   const urgencyStatus = (() => {
@@ -104,7 +103,6 @@ export function ProgramCard({ program, showMatchScore = false, className = '' }:
         {program.funding_amount && (
           <div className="mb-4">
             <div className="inline-flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
-              <DollarSign size={16} className="text-green-600" />
               <span className="text-xl font-bold text-green-600">
                 {formatAmountShort(program.funding_amount)}
               </span>

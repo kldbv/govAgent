@@ -175,7 +175,17 @@ export function ProgramDetailPage() {
 
   const formatAmount = (amount?: number) => {
     if (!amount && amount !== 0) return 'Не указано'
-    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'KZT', minimumFractionDigits: 0 }).format(amount!)
+    if (amount >= 1000000) {
+      const millions = amount / 1000000
+      const formatted = millions % 1 === 0 ? millions.toString() : millions.toFixed(1)
+      return `${formatted} млн ₸`
+    }
+    if (amount >= 1000) {
+      const thousands = amount / 1000
+      const formatted = thousands % 1 === 0 ? thousands.toString() : thousands.toFixed(1)
+      return `${formatted} тыс ₸`
+    }
+    return `${amount} ₸`
   }
 
   const formatDate = (dateString?: string) => {
