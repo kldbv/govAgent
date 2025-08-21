@@ -14,8 +14,13 @@ import GrantsPage from '@/pages/GrantsPage'
 import SubsidiesPage from '@/pages/SubsidiesPage'
 import HowToApplyPage from '@/pages/HowToApplyPage'
 import InstructionsPage from '@/pages/InstructionsPage'
+import ContactPage from '@/pages/ContactPage'
+import FAQPage from '@/pages/FAQPage'
+import NewsPage from '@/pages/NewsPage'
+import NewsDetailPage from '@/pages/NewsDetailPage'
 import AdminMethodologyPage from '@/pages/AdminMethodologyPage'
 import { AdminDashboardPage, AdminUsersPage, AdminProgramsPage, AdminApplicationsPage } from '@/pages/AdminPages'
+import { ManagerApplicationsPage } from '@/pages/ManagerPages'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuthContext()
@@ -36,7 +41,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { loading } = useAuthContext()
+  const { loading, user } = useAuthContext()
   
   if (loading) {
     return (
@@ -46,11 +51,27 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     )
   }
   
-  // Временно разрешаем доступ для тестирования
-  // TODO: Восстановить проверку роли после настройки аутентификации
-  // if (!user || !['admin', 'manager'].includes(user.role)) {
-  //   return <Navigate to="/dashboard" replace />
-  // }
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/" replace />
+  }
+  
+  return <>{children}</>
+}
+
+function ManagerRoute({ children }: { children: React.ReactNode }) {
+  const { loading, user } = useAuthContext()
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading-spinner"></div>
+      </div>
+    )
+  }
+  
+  if (!user || user.role !== 'manager') {
+    return <Navigate to="/" replace />
+  }
   
   return <>{children}</>
 }
@@ -72,9 +93,12 @@ function HomeRoute() {
   }
   
   if (isAuthenticated) {
-    // Redirect admins to admin panel, regular users to programs
+    // Redirect by role
     if (user?.role === 'admin') {
       return <Navigate to="/admin" replace />
+    }
+    if (user?.role === 'manager') {
+      return <Navigate to="/manager" replace />
     }
     return <Navigate to="/programs" replace />
   }
@@ -95,6 +119,11 @@ function AppRoutes() {
         <Route path="/grants" element={<GrantsPage />} />
         <Route path="/subsidies" element={<SubsidiesPage />} />
         <Route path="/how-to-apply" element={<HowToApplyPage />} />
+        <Route path="/instructions" element={<InstructionsPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/faq" element={<FAQPage />} />
+        <Route path="/news" element={<NewsPage />} />
+        <Route path="/news/:id" element={<NewsDetailPage />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={
@@ -128,6 +157,18 @@ function AppRoutes() {
           <AdminRoute>
             <AdminDashboardPage />
           </AdminRoute>
+        } />
+
+        {/* Manager routes */}
+        <Route path="/manager" element={
+          <ManagerRoute>
+            <ManagerApplicationsPage />
+          </ManagerRoute>
+        } />
+        <Route path="/manager/applications" element={
+          <ManagerRoute>
+            <ManagerApplicationsPage />
+          </ManagerRoute>
         } />
         <Route path="/admin/dashboard" element={
           <AdminRoute>

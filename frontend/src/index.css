@@ -109,4 +109,33 @@
   .badge-training {
     @apply bg-indigo-100 text-indigo-800;
   }
+
+  /* Landing page specific styles */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+  
+  /* Backdrop blur support */
+  .backdrop-blur-xs {
+    backdrop-filter: blur(2px);
+  }
+  
+  /* Custom gradient backgrounds */
+  .bg-mesh {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+    background-size: 20px 20px;
+  }
+  
+  /* Smooth transitions for all interactive elements */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+  
+  /* Hero section specific */
+  .hero-pattern {
+    background-image: 
+      radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
+  }
 }

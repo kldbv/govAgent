@@ -305,6 +305,7 @@ export function DashboardPage() {
 
 export function ProfilePage() {
   const { user, updateProfile } = useAuthContext()
+  const navigate = useNavigate()
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm({
     defaultValues: user?.profile || {}
   })
@@ -314,24 +315,70 @@ export function ProfilePage() {
   // Watch form values for progress calculation
   const watchedValues = watch()
   
+  // Safe number formatting function
+  const formatNumberSafely = (value: string | number | undefined): string => {
+    if (!value) return ''
+    try {
+      const numStr = typeof value === 'string' ? value.replace(/\D/g, '') : String(value)
+      const num = parseInt(numStr)
+      return isNaN(num) ? '' : new Intl.NumberFormat('ru-RU').format(num)
+    } catch {
+      return ''
+    }
+  }
+  
   // Calculate completion percentage
   const requiredFields = [
-    'business_type', 'business_size', 'industry', 'region', 'experience_years',
-    'bin', 'oked_code', 'desired_loan_amount'
+    'business_type', 'business_size', 'industry', 'experience_years',
+    'bin', 'region', 'desired_loan_amount'
   ]
-  const completedFields = requiredFields.filter(field => watchedValues[field as keyof typeof watchedValues])
+  const completedFields = requiredFields.filter(field => {
+    const value = watchedValues[field as keyof typeof watchedValues]
+    return value !== undefined && value !== '' && value !== null
+  })
   const completionPercentage = Math.round((completedFields.length / requiredFields.length) * 100)
+  
+  // Validation functions for each step
+  const validateStep1 = () => {
+    const step1Fields = ['business_type', 'business_size', 'industry', 'experience_years']
+    return step1Fields.every(field => {
+      const value = watchedValues[field as keyof typeof watchedValues]
+      return value !== undefined && value !== '' && value !== null
+    })
+  }
+  
+  const validateStep2 = () => {
+    const step2Fields = ['bin', 'region', 'desired_loan_amount']
+    return step2Fields.every(field => {
+      const value = watchedValues[field as keyof typeof watchedValues]
+      if (field === 'desired_loan_amount') {
+        return value !== undefined && value !== null && typeof value === 'number' && value >= 100000 // Minimum 100K KZT
+      }
+      return value !== undefined && value !== '' && value !== null
+    })
+  }
   
   const onSubmit = async (data: any) => {
     try {
       await updateProfile(data)
-      // Show success message or redirect
+      // Redirect to dashboard after successful profile completion
+      navigate('/dashboard')
     } catch (error) {
       console.error('Failed to update profile:', error)
     }
   }
   
-  const nextStep = () => setStep(step + 1)
+  const nextStep = () => {
+    if (step === 1 && !validateStep1()) {
+      // Trigger validation by attempting to submit
+      return
+    }
+    if (step === 2 && !validateStep2()) {
+      // Trigger validation by attempting to submit  
+      return
+    }
+    setStep(step + 1)
+  }
   const prevStep = () => setStep(step - 1)
   
   return (
@@ -402,12 +449,36 @@ export function ProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Отрасль <span className="text-red-500">*</span>
                 </label>
-                <input
-                  {...register('industry', { required: 'Укажите отрасль' })}
-                  type="text"
-                  className="input-field"
-                  placeholder="Например: Информационные технологии"
-                />
+                <select
+                  {...register('industry', { 
+                    required: 'Выберите отрасль',
+                    validate: (value: string) => value !== '' || 'Выберите отрасль'
+                  })}
+                  className={`input-field ${errors.industry ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                >
+                  <option value="">Выберите отрасль</option>
+                  <option value="information_technology">Информационные технологии</option>
+                  <option value="agriculture">Сельское хозяйство</option>
+                  <option value="manufacturing">Производство</option>
+                  <option value="construction">Строительство</option>
+                  <option value="retail_trade">Розничная торговля</option>
+                  <option value="wholesale_trade">Оптовая торговля</option>
+                  <option value="transport">Транспорт и логистика</option>
+                  <option value="tourism">Туризм и гостеприимство</option>
+                  <option value="education">Образование</option>
+                  <option value="healthcare">Здравоохранение</option>
+                  <option value="finance">Финансовые услуги</option>
+                  <option value="real_estate">Недвижимость</option>
+                  <option value="mining">Горнодобывающая промышленность</option>
+                  <option value="energy">Энергетика</option>
+                  <option value="food_processing">Пищевая промышленность</option>
+                  <option value="textile">Текстильная промышленность</option>
+                  <option value="chemical">Химическая промышленность</option>
+                  <option value="telecommunications">Телекоммуникации</option>
+                  <option value="consulting">Консалтинг</option>
+                  <option value="media">Медиа и развлечения</option>
+                  <option value="other">Другое</option>
+                </select>
                 {errors.industry && <p className="mt-1 text-sm text-red-600">{errors.industry.message as string}</p>}
               </div>
               
@@ -434,13 +505,55 @@ export function ProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Годовая выручка (тенге)
                 </label>
-                <input
-                  {...register('annual_revenue')}
-                  type="number"
-                  min="0"
-                  className="input-field"
-                  placeholder="10000000"
-                />
+                <div className="relative">
+                  <input
+                    {...register('annual_revenue', {
+                      setValueAs: (value: string) => {
+                        if (!value || value.trim() === '') return undefined
+                        try {
+                          const numericValue = parseInt(value.replace(/\D/g, ''))
+                          return isNaN(numericValue) ? undefined : numericValue
+                        } catch {
+                          return undefined
+                        }
+                      }
+                    })}
+                    type="text"
+                    className="input-field pr-12"
+                    placeholder="10 000 000"
+                    defaultValue={watchedValues.annual_revenue ? formatNumberSafely(watchedValues.annual_revenue) : ''}
+                    onChange={(e) => {
+                      try {
+                        const value = e.target.value.replace(/\D/g, '')
+                        if (value) {
+                          const formatted = formatNumberSafely(value)
+                          if (formatted) {
+                            e.target.value = formatted
+                          }
+                        }
+                        setValue('annual_revenue', value ? parseInt(value) : undefined, { shouldValidate: false })
+                      } catch (error) {
+                        console.warn('Error formatting annual revenue:', error)
+                      }
+                    }}
+                    onBlur={(e) => {
+                      try {
+                        const value = e.target.value.replace(/\D/g, '')
+                        if (value) {
+                          const formatted = formatNumberSafely(value)
+                          if (formatted) {
+                            e.target.value = formatted
+                          }
+                        }
+                      } catch (error) {
+                        console.warn('Error formatting annual revenue on blur:', error)
+                      }
+                    }}
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500">
+                    ₸
+                  </div>
+                </div>
               </div>
               
               <div>
@@ -461,11 +574,17 @@ export function ProfilePage() {
               <button
                 type="button"
                 onClick={nextStep}
-                className="btn-primary"
+                disabled={!validateStep1()}
+                className={`btn-primary ${!validateStep1() ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Далее
               </button>
             </div>
+            {!validateStep1() && (
+              <p className="mt-2 text-sm text-red-600 text-center">
+                Заполните все обязательные поля для продолжения
+              </p>
+            )}
           </div>
         )}
         

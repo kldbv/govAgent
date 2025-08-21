@@ -1,5 +1,4 @@
 import { RegionSelect } from './RegionSelect'
-import { OkedSelect } from './OkedSelect'
 import { LoanAmountSlider } from './LoanAmountSlider'
 
 interface BMPFieldsStepProps {
@@ -28,16 +27,20 @@ export function BMPFieldsStep({
     setValue('region', value, { shouldValidate: true })
   }
   
-  const handleOkedChange = (value: string) => {
-    try {
-      setValue('oked_code', value, { shouldValidate: true })
-    } catch (error) {
-      console.error('Error setting OKED code:', error)
-    }
-  }
-  
   const handleLoanAmountChange = (value: number) => {
     setValue('desired_loan_amount', value, { shouldValidate: true })
+  }
+  
+  // Validation for step 2
+  const validateStep2 = () => {
+    const step2Fields = ['bin', 'region', 'desired_loan_amount']
+    return step2Fields.every(field => {
+      const value = watchedValues[field as keyof typeof watchedValues]
+      if (field === 'desired_loan_amount') {
+        return value !== undefined && value !== null && typeof value === 'number' && value >= 100000 // Minimum 100K KZT
+      }
+      return value !== undefined && value !== '' && value !== null
+    })
   }
   
   return (
@@ -80,28 +83,6 @@ export function BMPFieldsStep({
           required
         />
         
-        {/* OKED Select */}
-        <div>
-          <input
-            {...register('oked_code', { 
-              required: 'ОКЭД код обязателен для заполнения',
-              validate: (value: string) => {
-                if (!value || value.trim() === '') {
-                  return 'Выберите ОКЭД код из списка'
-                }
-                return true
-              }
-            })}
-            type="hidden"
-          />
-          <OkedSelect
-            value={watchedValues.oked_code}
-            onChange={handleOkedChange}
-            error={errors.oked_code?.message}
-            required
-          />
-        </div>
-        
         {/* Loan Amount Slider */}
         <LoanAmountSlider
           value={watchedValues.desired_loan_amount}
@@ -122,11 +103,17 @@ export function BMPFieldsStep({
         <button
           type="button"
           onClick={onNext}
-          className="btn-primary"
+          disabled={!validateStep2()}
+          className={`btn-primary ${!validateStep2() ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           Далее
         </button>
       </div>
+      {!validateStep2() && (
+        <p className="mt-2 text-sm text-red-600 text-center">
+          Заполните все обязательные поля для продолжения
+        </p>
+      )}
     </div>
   )
 }

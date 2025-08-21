@@ -15,7 +15,7 @@ export function LoanAmountSlider({ value = 0, onChange, error, required = false 
   const [displayValue, setDisplayValue] = useState(value)
   
   // Loan amount ranges (in KZT)
-  const minAmount = 0
+  const minAmount = 100_000 // Minimum 100K KZT for loans
   const maxAmount = 100_000_000 // 100M KZT
   const step = 100_000 // 100K KZT
   
@@ -30,10 +30,25 @@ export function LoanAmountSlider({ value = 0, onChange, error, required = false 
   }
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseInt(e.target.value.replace(/\D/g, '')) || 0
-    const clampedValue = Math.max(minAmount, Math.min(maxAmount, newValue))
-    setDisplayValue(clampedValue)
-    onChange(clampedValue)
+    try {
+      const numericValue = e.target.value.replace(/\D/g, '')
+      const newValue = parseInt(numericValue) || minAmount
+      const clampedValue = Math.max(minAmount, Math.min(maxAmount, newValue))
+      
+      // Format the display value
+      if (numericValue) {
+        const formatted = new Intl.NumberFormat('ru-RU').format(clampedValue)
+        e.target.value = formatted
+      }
+      
+      setDisplayValue(clampedValue)
+      onChange(clampedValue)
+    } catch (error) {
+      console.warn('Error in loan amount input change:', error)
+      // Fallback to minimum amount
+      setDisplayValue(minAmount)
+      onChange(minAmount)
+    }
   }
   
   // Calculate percentage for slider styling
@@ -77,7 +92,7 @@ export function LoanAmountSlider({ value = 0, onChange, error, required = false 
             }}
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>0 ₸</span>
+            <span>100 тыс ₸</span>
             <span>100 млн ₸</span>
           </div>
         </div>

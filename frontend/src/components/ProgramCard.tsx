@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { BusinessProgram } from '@/types/program'
+import { Building2, Users, Calendar, MapPin, DollarSign, Clock, Heart, ArrowRight } from 'lucide-react'
 
 interface ProgramCardProps {
   program: BusinessProgram
@@ -24,13 +25,13 @@ export function ProgramCard({ program, showMatchScore = false, className = '' }:
   
   const getTypeColor = (type: string) => {
     const colors = {
-      'Грант': 'bg-green-100 text-green-800',
-      'Субсидия': 'bg-blue-100 text-blue-800',
-      'Льготное кредитование': 'bg-purple-100 text-purple-800',
-      'Консультации': 'bg-yellow-100 text-yellow-800',
-      'Обучение': 'bg-indigo-100 text-indigo-800',
+      'Грант': 'bg-green-500 text-white',
+      'Субсидия': 'bg-blue-500 text-white',
+      'Льготное кредитование': 'bg-purple-500 text-white',
+      'Консультации': 'bg-orange-500 text-white',
+      'Обучение': 'bg-indigo-500 text-white',
     }
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+    return colors[type as keyof typeof colors] || 'bg-gray-500 text-white'
   }
   
   const getSubmissionStatus = () => {
@@ -39,168 +40,179 @@ export function ProgramCard({ program, showMatchScore = false, className = '' }:
     const closesBase = program.closes_at || program.application_deadline
     const closes = closesBase ? new Date(closesBase).getTime() : null
 
-    if (opens && now < opens) return { label: 'Скоро открытие', color: 'bg-yellow-100 text-yellow-800' }
-    if (closes && now > closes) return { label: 'Закрыт', color: 'bg-red-100 text-red-800' }
-    return { label: 'Открыт', color: 'bg-green-100 text-green-800' }
+    if (opens && now < opens) return { label: 'Скоро открытие', color: 'bg-yellow-500 text-white', icon: Clock }
+    if (closes && now > closes) return { label: 'Закрыт', color: 'bg-red-500 text-white', icon: Clock }
+    return { label: 'Открыт', color: 'bg-green-500 text-white', icon: Clock }
   }
 
+  const formatAmountShort = (amount?: number) => {
+    if (!amount) return 'Не указано'
+    if (amount >= 1000000) {
+      return `${(amount / 1000000).toFixed(1)} млн KZT`
+    }
+    return formatAmount(amount)
+  }
+
+  const urgencyStatus = (() => {
+    if (!program.application_deadline) return null
+    const deadline = new Date(program.application_deadline)
+    const now = new Date()
+    const diffTime = deadline.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays <= 7) return { label: 'Скоро истекает', color: 'bg-red-500', textColor: 'text-red-600' }
+    if (diffDays <= 30) return { label: `Осталось ${diffDays} дней`, color: 'bg-yellow-500', textColor: 'text-yellow-600' }
+    return null
+  })()
+
   return (
-    <div className={`card card-hover p-6 h-full flex flex-col overflow-hidden ${className}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className={`badge ${getTypeColor(program.program_type)}`}>
-              {program.program_type}
+    <div className={`group relative bg-white rounded-2xl border border-gray-200 hover:border-primary-300 shadow-soft hover:shadow-medium transition-all duration-300 overflow-hidden h-full flex flex-col ${className}`}>
+      {/* Status Indicator */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 to-primary-600"></div>
+      
+      {/* Header with full-width title */}
+      <div className="p-6 pb-4 flex-1 flex flex-col">
+        {/* Badges Row */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(program.program_type)}`}>
+            <span className="w-2 h-2 bg-current rounded-full"></span>
+            {program.program_type}
+          </span>
+          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getSubmissionStatus().color}`}>
+            <Clock size={12} />
+            {getSubmissionStatus().label}
+          </span>
+          {urgencyStatus && (
+            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium text-white ${urgencyStatus.color}`}>
+              {urgencyStatus.label}
             </span>
-            <span className={`badge ${getSubmissionStatus().color}`}>
-              {getSubmissionStatus().label}
+          )}
+          {showMatchScore && program.score && (
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+              {Math.round(program.score)}% соответствие
             </span>
-            {showMatchScore && program.score && (
-              <span className="badge bg-blue-100 text-blue-800">
-                Соответствие: {Math.round(program.score)}%
-              </span>
-            )}
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 break-words">
-            {program.title}
-          </h3>
+          )}
         </div>
         
+        {/* Title - Full Width */}
+        <h3 className="text-xl font-bold text-gray-900 mb-3 leading-tight group-hover:text-primary-600 transition-colors">
+          {program.title}
+        </h3>
+        
+        {/* Amount */}
         {program.funding_amount && (
-          <div className="shrink-0 text-right">
-            <div className="text-xl sm:text-2xl font-bold text-green-600 leading-snug max-w-[9rem] truncate">
-              {formatAmount(program.funding_amount)}
+          <div className="mb-4">
+            <div className="inline-flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
+              <DollarSign size={16} className="text-green-600" />
+              <span className="text-xl font-bold text-green-600">
+                {formatAmountShort(program.funding_amount)}
+              </span>
             </div>
           </div>
         )}
-      </div>
-      
-      {/* Organization */}
-      <div className="flex items-center gap-2 mb-3">
-        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-        <span className="text-sm text-gray-600">{program.organization}</span>
-      </div>
-      
-      {/* Description */}
-      <p className="text-gray-600 text-sm line-clamp-3 mb-4 flex-1 break-words">
-        {program.description}
-      </p>
-      
-      {/* Match Reasons */}
-      {showMatchScore && program.matchReasons && program.matchReasons.length > 0 && (
-        <div className="mb-4">
-          <h4 className="text-xs font-medium text-gray-700 mb-2">Почему подходит:</h4>
-          <div className="space-y-1">
-            {program.matchReasons.slice(0, 3).map((reason, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <svg className="h-3 w-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span className="text-xs text-gray-600">{reason}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Target Audience */}
-      <div className="mb-4">
-        <div className="flex items-center gap-2">
-          <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          <span className="text-sm text-gray-600">
-            Целевая аудитория: {program.target_audience}
-          </span>
-        </div>
-      </div>
-      
-      {/* Loan Range */}
-      {(program.min_loan_amount || program.max_loan_amount) && (
-        <div className="mb-4">
-          <div className="flex items-center gap-2">
-            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-            </svg>
-            <span className="text-sm text-gray-600">
-              Диапазон займа: {formatAmount(program.min_loan_amount)} - {formatAmount(program.max_loan_amount)}
-            </span>
-          </div>
-        </div>
-      )}
-      
-      {/* Deadline */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span className="text-sm text-gray-600">
-            До: {formatDate(program.application_deadline)}
-          </span>
+        
+        {/* Organization */}
+        <div className="flex items-center gap-2 mb-4 text-gray-600">
+          <Building2 size={16} className="text-gray-400 flex-shrink-0" />
+          <span className="text-sm font-medium">{program.organization}</span>
         </div>
         
-        {/* Deadline urgency indicator */}
-        {program.application_deadline && (
-          <div className="text-right">
-            {(() => {
-              const deadline = new Date(program.application_deadline)
-              const now = new Date()
-              const diffTime = deadline.getTime() - now.getTime()
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-              
-              if (diffDays <= 7) {
-                return <span className="badge bg-red-100 text-red-800">Срочно</span>
-              } else if (diffDays <= 30) {
-                return <span className="badge bg-yellow-100 text-yellow-800">Скоро</span>
-              }
-              return null
-            })()}
+        {/* Description */}
+        <p className="text-gray-600 text-sm leading-relaxed line-clamp-3 mb-4 flex-1">
+          {program.description}
+        </p>
+        
+        {/* Match Reasons */}
+        {showMatchScore && program.matchReasons && program.matchReasons.length > 0 && (
+          <div className="mb-4 bg-green-50 p-3 rounded-lg">
+            <h4 className="text-sm font-semibold text-green-800 mb-2">Почему подходит:</h4>
+            <div className="space-y-1">
+              {program.matchReasons.slice(0, 2).map((reason, index) => (
+                <div key={index} className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-xs text-green-700">{reason}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+        
+        {/* Key Info Grid */}
+        <div className="space-y-3 mb-6">
+          {/* Target Audience */}
+          <div className="flex items-start gap-2">
+            <Users size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="text-xs text-gray-500 block">Целевая аудитория</span>
+              <span className="text-sm text-gray-700 font-medium">{program.target_audience}</span>
+            </div>
+          </div>
+          
+          {/* Deadline */}
+          <div className="flex items-start gap-2">
+            <Calendar size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="text-xs text-gray-500 block">Срок подачи</span>
+              <span className={`text-sm font-medium ${
+                urgencyStatus ? urgencyStatus.textColor : 'text-gray-700'
+              }`}>
+                {formatDate(program.application_deadline)}
+              </span>
+            </div>
+          </div>
+          
+          {/* Regions */}
+          {program.eligible_regions && program.eligible_regions.length > 0 && (
+            <div className="flex items-start gap-2">
+              <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-gray-500 block mb-1">Регионы</span>
+                <div className="flex flex-wrap gap-1">
+                  {program.eligible_regions.slice(0, 2).map((region, index) => (
+                    <span key={index} className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                      {region}
+                    </span>
+                  ))}
+                  {program.eligible_regions.length > 2 && (
+                    <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                      +{program.eligible_regions.length - 2}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Loan Range */}
+          {(program.min_loan_amount || program.max_loan_amount) && (
+            <div className="flex items-start gap-2">
+              <DollarSign size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <span className="text-xs text-gray-500 block">Диапазон займа</span>
+                <span className="text-sm text-gray-700 font-medium">
+                  {formatAmountShort(program.min_loan_amount)} - {formatAmountShort(program.max_loan_amount)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       
-      {/* Regions */}
-      {program.eligible_regions && program.eligible_regions.length > 0 && (
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="text-sm text-gray-600">Регионы:</span>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {program.eligible_regions.slice(0, 3).map((region, index) => (
-              <span key={index} className="badge bg-gray-100 text-gray-700 text-xs">
-                {region}
-              </span>
-            ))}
-            {program.eligible_regions.length > 3 && (
-              <span className="badge bg-gray-100 text-gray-700 text-xs">
-                +{program.eligible_regions.length - 3}
-              </span>
-            )}
-          </div>
+      {/* Actions Footer */}
+      <div className="p-6 pt-0 mt-auto">
+        <div className="flex gap-3">
+          <Link
+            to={`/programs/${program.id}`}
+            className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium text-center transition-colors duration-200 flex items-center justify-center gap-2 group/btn"
+          >
+            <span>Подробнее</span>
+            <ArrowRight size={16} className="group-hover/btn:translate-x-0.5 transition-transform" />
+          </Link>
+          <button className="p-3 border border-gray-300 hover:border-primary-300 hover:bg-primary-50 rounded-lg transition-colors duration-200 group/heart">
+            <Heart size={16} className="text-gray-400 group-hover/heart:text-primary-600 transition-colors" />
+          </button>
         </div>
-      )}
-      
-      {/* Actions */}
-      <div className="flex gap-3 mt-auto">
-        <Link
-          to={`/programs/${program.id}`}
-          className="btn-primary flex-1 text-center"
-        >
-          Подробнее
-        </Link>
-        <button className="btn-secondary px-4">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </button>
       </div>
     </div>
   )

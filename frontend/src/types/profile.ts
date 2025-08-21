@@ -6,4 +6,8 @@ export interface UserProfile {
   experience_years: number
   annual_revenue?: number
   employee_count?: number
+  bin: string
+  desired_loan_amount: number
+  business_goals?: string[]
+  business_goals_comments?: string
 }

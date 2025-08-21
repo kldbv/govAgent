@@ -55,7 +55,10 @@ export const register = (data: RegisterData) => {
 
 export const getCurrentUser = async () => {
   const response = await apiClient.get('/auth/me') as any;
-  return response.data.user;
+  // The response interceptor returns the response body, not the Axios wrapper.
+  // Support both shapes: { data: { user } } and { user }.
+  const user = response?.data?.user ?? response?.user;
+  return user;
 }
 
 // --- Profile --- //

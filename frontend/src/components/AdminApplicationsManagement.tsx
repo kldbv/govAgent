@@ -48,8 +48,8 @@ interface ApplicationDetails extends Application {
   business_size: string
   industry: string
   region: string
-  current_revenue: string
-  employees_count: string
+  annual_revenue: string
+  employee_count: string
   business_plan_summary: string
   funding_request: string
   expected_roi: string
@@ -106,6 +106,14 @@ export function AdminApplicationsManagement() {
         app.id === applicationId ? { ...app, status: newStatus as any } : app
       ))
       
+      // Update modal state if this application is currently selected
+      if (selectedApplication && selectedApplication.id === applicationId) {
+        setSelectedApplication({
+          ...selectedApplication,
+          status: newStatus as any
+        })
+      }
+      
       toast.success('Статус заявки обновлен!')
     } catch (err: any) {
       toast.error(err.message || 'Failed to update application status')
@@ -119,7 +127,11 @@ export function AdminApplicationsManagement() {
     try {
       setDetailsLoading(true)
       const response = await getApplicationDetails(applicationId)
-      setSelectedApplication(response.data)
+      console.log('Application details response:', response)
+      // Handle both response.data.application and response.data formats
+      const applicationData = response.data?.application || response.data
+      console.log('Application data:', applicationData)
+      setSelectedApplication(applicationData)
     } catch (err: any) {
       toast.error(err.message || 'Failed to load application details')
       console.error('Error loading application details:', err)
@@ -232,12 +244,12 @@ export function AdminApplicationsManagement() {
                       Информация о заявителе
                     </h3>
                     <div className="space-y-2">
-                      <p><span className="font-medium">Имя:</span> {selectedApplication.user_name}</p>
-                      <p><span className="font-medium">Email:</span> {selectedApplication.user_email}</p>
-                      <p><span className="font-medium">Тип бизнеса:</span> {selectedApplication.business_type}</p>
-                      <p><span className="font-medium">Размер бизнеса:</span> {selectedApplication.business_size}</p>
-                      <p><span className="font-medium">Отрасль:</span> {selectedApplication.industry}</p>
-                      <p><span className="font-medium">Регион:</span> {selectedApplication.region}</p>
+                      <p><span className="font-medium">Имя:</span> {selectedApplication.user_name || 'Не указано'}</p>
+                      <p><span className="font-medium">Email:</span> {selectedApplication.user_email || 'Не указано'}</p>
+                      <p><span className="font-medium">Тип бизнеса:</span> {selectedApplication.business_type || 'Не указано'}</p>
+                      <p><span className="font-medium">Размер бизнеса:</span> {selectedApplication.business_size || 'Не указано'}</p>
+                      <p><span className="font-medium">Отрасль:</span> {selectedApplication.industry || 'Не указано'}</p>
+                      <p><span className="font-medium">Регион:</span> {selectedApplication.region || 'Не указано'}</p>
                     </div>
                   </div>
 
@@ -247,10 +259,10 @@ export function AdminApplicationsManagement() {
                       Бизнес-показатели
                     </h3>
                     <div className="space-y-2">
-                      <p><span className="font-medium">Текущая выручка:</span> {selectedApplication.current_revenue}</p>
-                      <p><span className="font-medium">Количество сотрудников:</span> {selectedApplication.employees_count}</p>
-                      <p><span className="font-medium">Запрашиваемое финансирование:</span> {selectedApplication.funding_request}</p>
-                      <p><span className="font-medium">Ожидаемая ROI:</span> {selectedApplication.expected_roi}</p>
+                      <p><span className="font-medium">Текущая выручка:</span> {selectedApplication.annual_revenue || 'Не указано'}</p>
+                      <p><span className="font-medium">Количество сотрудников:</span> {selectedApplication.employee_count || 'Не указано'}</p>
+                      <p><span className="font-medium">Запрашиваемое финансирование:</span> {selectedApplication.funding_request || 'Не указано'}</p>
+                      <p><span className="font-medium">Ожидаемая ROI:</span> {selectedApplication.expected_roi || 'Не указано'}</p>
                     </div>
                   </div>
                 </div>
@@ -274,7 +286,7 @@ export function AdminApplicationsManagement() {
                       Краткое описание бизнес-плана
                     </h3>
                     <p className="text-gray-700 whitespace-pre-wrap">
-                      {selectedApplication.business_plan_summary}
+                      {selectedApplication.business_plan_summary || 'Не указано'}
                     </p>
                   </div>
 
@@ -283,7 +295,7 @@ export function AdminApplicationsManagement() {
                       Временные рамки реализации
                     </h3>
                     <p className="text-gray-700">
-                      {selectedApplication.timeline}
+                      {selectedApplication.timeline || 'Не указано'}
                     </p>
                   </div>
 
@@ -293,7 +305,7 @@ export function AdminApplicationsManagement() {
                       Даты
                     </h3>
                     <div className="space-y-2">
-                      <p><span className="font-medium">Подана:</span> {new Date(selectedApplication.submitted_at).toLocaleDateString('ru-RU')}</p>
+                      <p><span className="font-medium">Подана:</span> {selectedApplication.submitted_at ? new Date(selectedApplication.submitted_at).toLocaleDateString('ru-RU') : 'Invalid Date'}</p>
                       {selectedApplication.reviewed_at && (
                         <p><span className="font-medium">Рассмотрена:</span> {new Date(selectedApplication.reviewed_at).toLocaleDateString('ru-RU')}</p>
                       )}
@@ -307,23 +319,23 @@ export function AdminApplicationsManagement() {
                 <button
                   onClick={() => handleStatusChange(selectedApplication.id, 'under_review')}
                   disabled={selectedApplication.status === 'under_review' || actionLoading[selectedApplication.id]}
-                  className="btn-secondary disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  На рассмотрение
+                  {actionLoading[selectedApplication.id] && selectedApplication.status !== 'under_review' ? 'Обновление...' : 'На рассмотрение'}
                 </button>
                 <button
                   onClick={() => handleStatusChange(selectedApplication.id, 'approved')}
                   disabled={selectedApplication.status === 'approved' || actionLoading[selectedApplication.id]}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Одобрить
+                  {actionLoading[selectedApplication.id] && selectedApplication.status !== 'approved' ? 'Обновление...' : 'Одобрить'}
                 </button>
                 <button
                   onClick={() => handleStatusChange(selectedApplication.id, 'rejected')}
                   disabled={selectedApplication.status === 'rejected' || actionLoading[selectedApplication.id]}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Отклонить
+                  {actionLoading[selectedApplication.id] && selectedApplication.status !== 'rejected' ? 'Обновление...' : 'Отклонить'}
                 </button>
               </div>
             </div>

@@ -47,6 +47,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const fetchUserProfile = async () => {
     try {
       const userData = await api.getCurrentUser()
+      console.log('Fetched user data:', userData)
       setUser(userData)
     } catch (error) {
       console.error('Failed to fetch user profile:', error)
@@ -61,13 +62,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (credentials: LoginCredentials) => {
     try {
       const response = await api.login(credentials) as any
-      const { token } = response.data
+      console.log('Login response:', response)
+      // Backend returns: { success: true, data: { token: string, user: any } }
+      // Interceptor returns the body directly, so response = { success: true, data: { token, user } }
+      const token = response?.data?.token
+      console.log('Extracted token:', token)
+      if (!token) {
+        console.error('No token in response:', response)
+        throw new Error('Токен не получен при входе')
+      }
       localStorage.setItem('token', token)
       api.setAuthToken(token)
       // Immediately fetch full user with profile after login
       await fetchUserProfile()
       toast.success('Успешный вход в систему!')
     } catch (error: any) {
+      console.error('Login error:', error)
       toast.error(error.message || 'Ошибка входа в систему')
       throw error
     }
@@ -76,7 +86,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (data: RegisterData) => {
     try {
       const response = await api.register(data) as any
-      const { token } = response.data
+      // Backend returns: { success: true, data: { token: string, user: any } }
+      // Interceptor returns the body directly, so response = { success: true, data: { token, user } }
+      const token = response?.data?.token
+      if (!token) {
+        throw new Error('Токен не получен при регистрации')
+      }
       localStorage.setItem('token', token)
       api.setAuthToken(token)
       // Immediately fetch full user with profile after registration

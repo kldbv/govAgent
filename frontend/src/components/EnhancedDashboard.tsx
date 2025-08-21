@@ -54,7 +54,7 @@ export function EnhancedDashboard() {
     
     const requiredFields = [
       'business_type', 'business_size', 'industry', 'region', 'experience_years',
-      'bin', 'oked_code', 'desired_loan_amount'
+      'bin', 'desired_loan_amount'
     ]
     
     const completedFields = requiredFields.filter(field => user.profile?.[field as keyof typeof user.profile])
@@ -264,7 +264,6 @@ export function EnhancedDashboard() {
                   <p className="text-xs text-gray-500 mb-2">Необходимо заполнить:</p>
                   <ul className="text-xs text-gray-600 space-y-1">
                     {!user?.profile?.bin && <li>• БИН компании</li>}
-                    {!user?.profile?.oked_code && <li>• ОКЭД код деятельности</li>}
                     {!user?.profile?.region && <li>• Регион</li>}
                     {!user?.profile?.desired_loan_amount && <li>• Желаемая сумма займа</li>}
                   </ul>
