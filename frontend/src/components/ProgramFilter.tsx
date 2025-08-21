@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { RegionSelect } from './RegionSelect'
-import { OkedSelect } from './OkedSelect'
 import { ProgramFilter as ProgramFilterType, ProgramStats } from '@/types/program'
 import { getProgramStats } from '@/services/api'
 
@@ -13,7 +12,6 @@ interface ProgramFilterProps {
 
 export function ProgramFilter({ filters, onFiltersChange, onReset }: ProgramFilterProps) {
   const [stats, setStats] = useState<ProgramStats | null>(null)
-  const [showMore, setShowMore] = useState(false)
   
   useEffect(() => {
     const loadStats = async () => {
@@ -32,7 +30,6 @@ export function ProgramFilter({ filters, onFiltersChange, onReset }: ProgramFilt
     onFiltersChange({ ...filters, [key]: value })
   }
   
-  const organizationOptions = stats ? Object.keys(stats.by_organization) : []
   const typeOptions = stats ? Object.keys(stats.by_type) : []
   
   return (
@@ -88,24 +85,6 @@ export function ProgramFilter({ filters, onFiltersChange, onReset }: ProgramFilt
           </select>
         </div>
         
-        {/* Organization */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Организация
-          </label>
-          <select
-            value={filters.organization || ''}
-            onChange={(e) => updateFilter('organization', e.target.value)}
-            className="input-field"
-          >
-            <option value="">Все организации</option>
-            {organizationOptions.map(org => (
-              <option key={org} value={org}>
-                {org} ({stats?.by_organization[org]})
-              </option>
-            ))}
-          </select>
-        </div>
         
         {/* Region */}
         <RegionSelect
@@ -113,69 +92,6 @@ export function ProgramFilter({ filters, onFiltersChange, onReset }: ProgramFilt
           onChange={(value) => updateFilter('region', value)}
         />
         
-        {/* Business Type & Size - Collapsible */}
-        <div>
-          <button
-            onClick={() => setShowMore(!showMore)}
-            className="flex items-center justify-between w-full text-sm font-medium text-gray-700 mb-2"
-          >
-            <span>Дополнительные фильтры</span>
-            <svg 
-              className={`h-4 w-4 transform transition-transform ${showMore ? 'rotate-180' : ''}`}
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          
-          {showMore && (
-            <div className="space-y-4 pl-4 border-l-2 border-gray-100">
-              {/* Business Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тип бизнеса
-                </label>
-                <select
-                  value={filters.business_type || ''}
-                  onChange={(e) => updateFilter('business_type', e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">Все типы бизнеса</option>
-                  <option value="startup">Стартап</option>
-                  <option value="sme">МСП</option>
-                  <option value="individual">ИП</option>
-                  <option value="ngo">НПО</option>
-                </select>
-              </div>
-              
-              {/* Business Size */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Размер бизнеса
-                </label>
-                <select
-                  value={filters.business_size || ''}
-                  onChange={(e) => updateFilter('business_size', e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">Все размеры</option>
-                  <option value="micro">Микро</option>
-                  <option value="small">Малый</option>
-                  <option value="medium">Средний</option>
-                  <option value="large">Крупный</option>
-                </select>
-              </div>
-              
-              {/* OKED Code */}
-              <OkedSelect
-                value={filters.oked_code}
-                onChange={(value) => updateFilter('oked_code', value)}
-              />
-            </div>
-          )}
-        </div>
         
       {/* Open only */}
       <div className="flex items-center justify-between">
@@ -189,59 +105,8 @@ export function ProgramFilter({ filters, onFiltersChange, onReset }: ProgramFilt
         </label>
       </div>
 
-      {/* Funding Range */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Размер финансирования (тенге)
-          </label>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">От</label>
-                <input
-                  type="number"
-                  value={filters.min_funding || ''}
-                  onChange={(e) => updateFilter('min_funding', parseInt(e.target.value) || undefined)}
-                  placeholder="0"
-                  className="input-field text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">До</label>
-                <input
-                  type="number"
-                  value={filters.max_funding || ''}
-                  onChange={(e) => updateFilter('max_funding', parseInt(e.target.value) || undefined)}
-                  placeholder="∞"
-                  className="input-field text-sm"
-                />
-              </div>
-            </div>
-            
-            {stats && (
-              <div className="text-xs text-gray-500">
-                Диапазон: {new Intl.NumberFormat('ru-RU').format(stats.funding_range.min)} - {new Intl.NumberFormat('ru-RU').format(stats.funding_range.max)} ₸
-                <br />
-                Средний размер: {new Intl.NumberFormat('ru-RU').format(stats.funding_range.average)} ₸
-              </div>
-            )}
-          </div>
-        </div>
       </div>
       
-      {/* Active Filters Count */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">
-            Активных фильтров: {Object.values(filters).filter(v => v !== undefined && v !== '' && v !== null).length}
-          </span>
-          {stats && (
-            <span className="text-gray-500">
-              Всего программ: {stats.total_programs}
-            </span>
-          )}
-        </div>
-      </div>
     </div>
   )
 }
