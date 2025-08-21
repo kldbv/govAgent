@@ -19,6 +19,8 @@ import ContactPage from '@/pages/ContactPage'
 import FAQPage from '@/pages/FAQPage'
 import NewsPage from '@/pages/NewsPage'
 import NewsDetailPage from '@/pages/NewsDetailPage'
+import PrivacyPage from '@/pages/PrivacyPage'
+import TermsPage from '@/pages/TermsPage'
 import AdminMethodologyPage from '@/pages/AdminMethodologyPage'
 import { AdminDashboardPage, AdminUsersPage, AdminProgramsPage, AdminApplicationsPage } from '@/pages/AdminPages'
 import { ManagerApplicationsPage } from '@/pages/ManagerPages'
@@ -126,6 +128,8 @@ function AppRoutes() {
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/news" element={<NewsPage />} />
         <Route path="/news/:id" element={<NewsDetailPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={
