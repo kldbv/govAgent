@@ -33,19 +33,19 @@ export default function Layout({ children }: LayoutProps) {
       {/* Top Info Bar */}
       <div className="bg-primary-900 text-white py-2 text-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
               <div className="flex items-center gap-2">
                 <Phone size={14} />
-                <span>Горячая линия: +7 (727) 244-50-40</span>
+                <span className="truncate">+7 (727) 244-50-40</span>
               </div>
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2">
                 <Mail size={14} />
-                <span>info@businesssupport.kz</span>
+                <span className="truncate">info@businesssupport.kz</span>
               </div>
             </div>
-            <div className="text-xs text-primary-200">
-              Работаем: Пн-Пт 9:00-18:00
+            <div className="text-xs text-primary-200 whitespace-nowrap">
+              Пн-Пт 9:00-18:00
             </div>
           </div>
         </div>
@@ -226,28 +226,28 @@ export default function Layout({ children }: LayoutProps) {
             </nav>
 
             {/* User Menu */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {isAuthenticated && user ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button 
                     onClick={logout}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                    className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
                   >
                     <LogOut size={14} />
                     <span className="hidden sm:inline">Выход</span>
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <Link 
                     to="/login" 
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors"
+                    className="px-2 sm:px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors"
                   >
                     Войти
                   </Link>
                   <Link 
                     to="/register" 
-                    className="px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    className="px-2 sm:px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
                   >
                     Регистрация
                   </Link>
