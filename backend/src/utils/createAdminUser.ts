@@ -47,7 +47,7 @@ export async function createAdminUser() {
       ]);
       console.log('✅ Admin profile created');
     } catch (profileError) {
-      console.log('⚠️ Could not create admin profile (optional):', profileError.message);
+      console.log('⚠️ Could not create admin profile (optional):', profileError instanceof Error ? profileError.message : String(profileError));
     }
   } catch (error) {
     console.error('Error creating admin user:', error);

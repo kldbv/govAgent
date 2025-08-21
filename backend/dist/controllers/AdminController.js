@@ -164,10 +164,8 @@ class AdminController {
                     query += ` AND is_active = false`;
                 }
                 query += ` ORDER BY created_at DESC`;
-                const countQuery = query.replace(`SELECT id, title as name, description, organization, program_type, funding_amount, 
-               application_deadline, requirements as eligibility_criteria, is_active, 
-               created_at, updated_at,
-               CASE WHEN is_active THEN 'active' ELSE 'inactive' END as status`, 'SELECT COUNT(*)');
+                let countQuery = query.replace(/ORDER BY.*$/, '');
+                countQuery = countQuery.replace(/SELECT.*?FROM/, 'SELECT COUNT(*) FROM');
                 const totalResult = await database_1.default.query(countQuery, params);
                 const total = parseInt(totalResult.rows[0].count);
                 const offset = (Number(page) - 1) * Number(limit);
@@ -266,13 +264,8 @@ class AdminController {
                     paramIndex++;
                 }
                 query += ` ORDER BY a.last_updated DESC`;
-                const countQuery = query.replace(`SELECT a.id, a.user_id, a.program_id, a.status, a.submitted_at, a.last_updated,
-               a.submission_reference, a.notes, a.form_data,
-               u.full_name as user_name, u.email as user_email,
-               bp.title as program_name, bp.organization,
-               COALESCE(a.form_data->>'business_plan_summary', '') as business_plan_summary,
-               COALESCE(a.form_data->>'funding_request', '') as funding_request,
-               COALESCE(a.form_data->>'expected_roi', '') as expected_roi`, 'SELECT COUNT(*)');
+                let countQuery = query.replace(/ORDER BY.*$/, '');
+                countQuery = countQuery.replace(/SELECT.*?FROM/, 'SELECT COUNT(*) FROM');
                 const totalResult = await database_1.default.query(countQuery, params);
                 const total = parseInt(totalResult.rows[0].count);
                 const offset = (Number(page) - 1) * Number(limit);
@@ -335,7 +328,7 @@ class AdminController {
                u.full_name as user_name, u.email as user_email,
                bp.title as program_name, bp.organization,
                p.business_type, p.business_size, p.industry, p.region,
-               p.current_revenue, p.employees_count,
+               p.annual_revenue, p.employee_count,
                COALESCE(a.form_data->>'business_plan_summary', '') as business_plan_summary,
                COALESCE(a.form_data->>'funding_request', '') as funding_request,
                COALESCE(a.form_data->>'expected_roi', '') as expected_roi,

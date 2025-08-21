@@ -117,7 +117,7 @@ export async function seedTestData() {
           'Алматы'
         ]);
       } catch (profileError) {
-        console.log('⚠️ Could not create test user profile (optional):', profileError.message);
+        console.log('⚠️ Could not create test user profile (optional):', profileError instanceof Error ? profileError.message : String(profileError));
       }
 
       console.log('✅ Test user created');

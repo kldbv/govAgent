@@ -410,7 +410,7 @@ export class AdminController {
                u.full_name as user_name, u.email as user_email,
                bp.title as program_name, bp.organization,
                p.business_type, p.business_size, p.industry, p.region,
-               p.current_revenue, p.employees_count,
+               p.annual_revenue, p.employee_count,
                COALESCE(a.form_data->>'business_plan_summary', '') as business_plan_summary,
                COALESCE(a.form_data->>'funding_request', '') as funding_request,
                COALESCE(a.form_data->>'expected_roi', '') as expected_roi,

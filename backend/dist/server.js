@@ -23,6 +23,8 @@ const migrateApplicationSubmissions_1 = require("./utils/migrateApplicationSubmi
 const migrateProgressTable_1 = require("./utils/migrateProgressTable");
 const ensureMVPColumns_1 = require("./utils/ensureMVPColumns");
 const addUserRoles_1 = require("./utils/addUserRoles");
+const createAdminUser_1 = require("./utils/createAdminUser");
+const seedTestData_1 = require("./utils/seedTestData");
 dotenv_1.default.config();
 (async () => {
     try {
@@ -31,6 +33,10 @@ dotenv_1.default.config();
         await (0, migrateProgressTable_1.createProgressTable)();
         await (0, ensureMVPColumns_1.ensureMVPColumns)();
         await (0, addUserRoles_1.addUserRoles)();
+        await (0, createAdminUser_1.createAdminUser)();
+        if (process.env.NODE_ENV !== 'production') {
+            await (0, seedTestData_1.seedTestData)();
+        }
         console.log('✅ Startup migrations completed');
     }
     catch (err) {

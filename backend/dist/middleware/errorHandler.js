@@ -12,10 +12,15 @@ class AppError extends Error {
 exports.AppError = AppError;
 const errorHandler = (error, req, res, next) => {
     const { statusCode = 500, message } = error;
-    console.error(`Error ${statusCode}:`, message);
+    console.error(`\n=== ERROR DETAILS ===`);
+    console.error(`Status: ${statusCode}`);
+    console.error(`Message: ${message}`);
+    console.error(`Path: ${req.method} ${req.originalUrl}`);
+    console.error(`User: ${req.user?.email || 'Not authenticated'}`);
     if (process.env.NODE_ENV === 'development') {
-        console.error(error.stack);
+        console.error(`Stack:`, error.stack);
     }
+    console.error(`==================\n`);
     const extra = {};
     const anyErr = error;
     if (anyErr?.code)
