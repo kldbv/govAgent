@@ -319,28 +319,28 @@ export function ProgramDetailPage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-4 bg-gray-50 rounded-lg">
               <div className="text-center">
-                <div className="text-lg font-semibold text-gray-900">{program.target_audience}</div>
-                <div className="text-xs text-gray-500">Целевая аудитория</div>
+                <div className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 truncate px-1">{program.target_audience}</div>
+                <div className="text-xs text-gray-500">Аудитория</div>
               </div>
               {program.min_loan_amount && program.max_loan_amount && (
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-gray-900">
-                    {formatAmount(program.min_loan_amount)} - {formatAmount(program.max_loan_amount)}
+                  <div className="text-xs sm:text-sm lg:text-base font-semibold text-gray-900">
+                    {formatAmount(program.min_loan_amount)}<br className="sm:hidden" /><span className="hidden sm:inline"> - </span>{formatAmount(program.max_loan_amount)}
                   </div>
-                  <div className="text-xs text-gray-500">Диапазон займа</div>
+                  <div className="text-xs text-gray-500">Диапазон</div>
                 </div>
               )}
               {program.eligible_regions && program.eligible_regions.length > 0 && (
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-gray-900">{program.eligible_regions.length}</div>
-                  <div className="text-xs text-gray-500">Регионов доступно</div>
+                  <div className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">{program.eligible_regions.length}</div>
+                  <div className="text-xs text-gray-500">Регионов</div>
                 </div>
               )}
               <div className="text-center">
-                <div className="text-lg font-semibold text-gray-900">{program.program_type}</div>
-                <div className="text-xs text-gray-500">Тип поддержки</div>
+                <div className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 truncate px-1">{program.program_type}</div>
+                <div className="text-xs text-gray-500">Тип</div>
               </div>
             </div>
           </div>
