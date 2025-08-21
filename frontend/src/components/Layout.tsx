@@ -31,20 +31,18 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Info Bar */}
-      <div className="bg-primary-900 text-white py-2 text-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
-            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
-              <div className="flex items-center gap-2">
-                <Phone size={14} />
-                <span className="truncate">+7 (727) 244-50-40</span>
-              </div>
-              <div className="hidden sm:flex items-center gap-2">
-                <Mail size={14} />
-                <span className="truncate">info@businesssupport.kz</span>
-              </div>
+      <div className="bg-primary-900 text-white py-1 text-xs sm:py-2 sm:text-sm">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center text-center">
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+              <Phone size={12} className="sm:w-3.5 sm:h-3.5" />
+              <span className="truncate text-xs sm:text-sm">+7 (727) 244-50-40</span>
             </div>
-            <div className="text-xs text-primary-200 whitespace-nowrap">
+            <div className="hidden md:flex items-center gap-2 min-w-0">
+              <Mail size={12} className="sm:w-3.5 sm:h-3.5" />
+              <span className="truncate text-xs sm:text-sm">info@businesssupport.kz</span>
+            </div>
+            <div className="text-xs text-primary-200 whitespace-nowrap flex-shrink-0">
               Пн-Пт 9:00-18:00
             </div>
           </div>
@@ -55,18 +53,18 @@ export default function Layout({ children }: LayoutProps) {
       <header className={`bg-white border-b transition-all duration-300 sticky top-0 z-50 ${
         isScrolled ? 'shadow-medium' : 'shadow-soft'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16 gap-2">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-sm sm:text-lg">
                 BS
               </div>
-              <div className="hidden sm:block">
-                <div className="text-lg font-bold text-primary-600 whitespace-nowrap">
+              <div className="hidden sm:block min-w-0">
+                <div className="text-base sm:text-lg font-bold text-primary-600 whitespace-nowrap truncate">
                   BusinessSupport KZ
                 </div>
-                <div className="text-xs text-gray-500 whitespace-nowrap">
+                <div className="text-xs text-gray-500 whitespace-nowrap truncate">
                   Поддержка предпринимательства
                 </div>
               </div>
@@ -226,28 +224,28 @@ export default function Layout({ children }: LayoutProps) {
             </nav>
 
             {/* User Menu */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {isAuthenticated && user ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
                   <button 
                     onClick={logout}
-                    className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                    className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
                   >
-                    <LogOut size={14} />
+                    <LogOut size={12} className="sm:w-3.5 sm:h-3.5" />
                     <span className="hidden sm:inline">Выход</span>
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <Link 
                     to="/login" 
-                    className="px-2 sm:px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors"
+                    className="px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors whitespace-nowrap"
                   >
                     Войти
                   </Link>
                   <Link 
                     to="/register" 
-                    className="px-2 sm:px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
+                    className="px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm font-medium bg-primary-600 text-white rounded-md sm:rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
                   >
                     Регистрация
                   </Link>
