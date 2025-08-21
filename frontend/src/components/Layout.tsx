@@ -63,10 +63,10 @@ export default function Layout({ children }: LayoutProps) {
                 BS
               </div>
               <div className="hidden sm:block">
-                <div className="text-lg font-bold text-primary-600">
+                <div className="text-lg font-bold text-primary-600 whitespace-nowrap">
                   BusinessSupport KZ
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 whitespace-nowrap">
                   Поддержка предпринимательства
                 </div>
               </div>

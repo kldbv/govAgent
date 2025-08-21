@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthContext, AuthProvider } from '@/hooks/useAuth'
 import Layout from '@/components/Layout'
+import ScrollToTop from '@/components/ScrollToTop'
 import HomePage from '@/pages/HomePage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
@@ -109,6 +110,7 @@ function HomeRoute() {
 function AppRoutes() {
   return (
     <Layout>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginPage />} />
