@@ -224,81 +224,331 @@ export function ProgramDetailPage() {
     )
   }
 
+  const getStatusInfo = () => {
+    const now = new Date().getTime()
+    const opens = program.opens_at ? new Date(program.opens_at).getTime() : null
+    const closesBase = program.closes_at || program.application_deadline
+    const closes = closesBase ? new Date(closesBase).getTime() : null
+
+    if (opens && now < opens) {
+      const daysUntilOpen = Math.ceil((opens - now) / (1000 * 60 * 60 * 24))
+      return { 
+        label: `Откроется через ${daysUntilOpen} дн.`, 
+        color: 'bg-yellow-500 text-white',
+        isOpen: false
+      }
+    }
+    if (closes && now > closes) {
+      return { 
+        label: 'Закрыт для подачи', 
+        color: 'bg-red-500 text-white',
+        isOpen: false 
+      }
+    }
+    
+    if (closes) {
+      const daysLeft = Math.ceil((closes - now) / (1000 * 60 * 60 * 24))
+      if (daysLeft <= 7) {
+        return { 
+          label: `Остался ${daysLeft} дн.`, 
+          color: 'bg-red-500 text-white',
+          isOpen: true,
+          urgent: true
+        }
+      }
+      if (daysLeft <= 30) {
+        return { 
+          label: `Осталось ${daysLeft} дн.`, 
+          color: 'bg-yellow-500 text-white',
+          isOpen: true
+        }
+      }
+    }
+    
+    return { 
+      label: 'Открыт для подачи', 
+      color: 'bg-green-500 text-white',
+      isOpen: true 
+    }
+  }
+
+  const statusInfo = getStatusInfo()
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-6">
-        <button onClick={() => navigate(-1)} className="text-blue-600 hover:text-blue-800 text-sm">← Назад</button>
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Назад к программам
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main */}
-        <div className="lg:col-span-2 card p-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="min-w-0">
-              <div className="badge bg-gray-100 text-gray-800 mb-2 inline-block">{program.program_type}</div>
-              <h1 className="text-2xl font-bold text-gray-900 break-words">{program.title}</h1>
-              <p className="text-sm text-gray-600 mt-1">{program.organization}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Header Card */}
+          <div className="card p-6">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <span className="badge bg-blue-100 text-blue-800">{program.program_type}</span>
+                  <span className={`badge ${statusInfo.color}`}>{statusInfo.label}</span>
+                  {statusInfo.urgent && (
+                    <span className="badge bg-red-100 text-red-800 animate-pulse">Срочно!</span>
+                  )}
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{program.title}</h1>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h3M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span className="font-medium">{program.organization}</span>
+                </div>
+              </div>
+              <div className="text-center sm:text-right">
+                <div className="text-3xl font-bold text-green-600 mb-1">{formatAmount(program.funding_amount)}</div>
+                <div className="text-sm text-gray-500">Размер финансирования</div>
+                {program.application_deadline && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Дедлайн: <span className="font-medium">{formatDate(program.application_deadline)}</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="shrink-0 text-right">
-              <div className="text-xl sm:text-2xl font-bold text-green-600">{formatAmount(program.funding_amount)}</div>
-              <div className="text-sm text-gray-500">Дедлайн: {formatDate(program.application_deadline)}</div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-gray-900">{program.target_audience}</div>
+                <div className="text-xs text-gray-500">Целевая аудитория</div>
+              </div>
+              {program.min_loan_amount && program.max_loan_amount && (
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-gray-900">
+                    {formatAmount(program.min_loan_amount)} - {formatAmount(program.max_loan_amount)}
+                  </div>
+                  <div className="text-xs text-gray-500">Диапазон займа</div>
+                </div>
+              )}
+              {program.eligible_regions && program.eligible_regions.length > 0 && (
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-gray-900">{program.eligible_regions.length}</div>
+                  <div className="text-xs text-gray-500">Регионов доступно</div>
+                </div>
+              )}
+              <div className="text-center">
+                <div className="text-lg font-semibold text-gray-900">{program.program_type}</div>
+                <div className="text-xs text-gray-500">Тип поддержки</div>
+              </div>
             </div>
           </div>
 
-          <h2 className="text-lg font-semibold mb-2">Описание</h2>
-          <p className="text-gray-700 mb-4 whitespace-pre-line">{program.description}</p>
+          {/* Description */}
+          <div className="card p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Описание программы
+            </h2>
+            <div className="prose prose-gray max-w-none">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{program.description}</p>
+            </div>
+          </div>
 
-          <h2 className="text-lg font-semibold mb-2">Требования</h2>
-          <p className="text-gray-700 mb-4 whitespace-pre-line">{program.requirements}</p>
+          {/* Requirements */}
+          <div className="card p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Требования к участникам
+            </h2>
+            <div className="prose prose-gray max-w-none">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{program.requirements}</p>
+            </div>
+          </div>
 
-          <h2 className="text-lg font-semibold mb-2">Преимущества</h2>
-          <p className="text-gray-700 mb-4 whitespace-pre-line">{program.benefits}</p>
+          {/* Benefits */}
+          <div className="card p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+              Преимущества программы
+            </h2>
+            <div className="prose prose-gray max-w-none">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{program.benefits}</p>
+            </div>
+          </div>
 
-          <h2 className="text-lg font-semibold mb-2">Процесс подачи</h2>
-          <p className="text-gray-700 whitespace-pre-line">{program.application_process}</p>
+          {/* Application Process */}
+          <div className="card p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Процесс подачи заявки
+            </h2>
+            <div className="prose prose-gray max-w-none">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{program.application_process}</p>
+            </div>
+          </div>
 
-          <div className="mt-6">
-            <button
-              className="btn-primary"
-              onClick={() => {
-                // open application wizard
-                setShowWizard(true)
-              }}
-            >
-              Подать заявку
-            </button>
-            <a
-              className="btn-secondary ml-3 inline-block"
-              href={`/programs/${program.id}/instructions`}
-            >
-              Инструкция по оформлению
-            </a>
+          {/* Action Buttons */}
+          <div className="card p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                className={`btn-primary flex-1 ${!statusInfo.isOpen ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={statusInfo.isOpen ? handleApply : undefined}
+                disabled={!statusInfo.isOpen}
+              >
+                {statusInfo.isOpen ? 'Подать заявку' : 'Подача заявок закрыта'}
+              </button>
+              <a
+                className="btn-secondary flex-1 text-center"
+                href={`/programs/${program.id}/instructions`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Инструкция по оформлению
+              </a>
+            </div>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="card p-6 h-fit">
-          <h3 className="text-lg font-semibold mb-4">Информация</h3>
-          <div className="space-y-3 text-sm text-gray-700">
-            <div><span className="text-gray-500">Организация: </span>{program.organization}</div>
-            <div><span className="text-gray-500">Тип программы: </span>{program.program_type}</div>
-            <div><span className="text-gray-500">Финансирование: </span>{formatAmount(program.funding_amount)}</div>
-            <div><span className="text-gray-500">Дедлайн: </span>{formatDate(program.application_deadline)}</div>
-            {program.eligible_regions && program.eligible_regions.length > 0 && (
-              <div>
-                <div className="text-gray-500 mb-1">Регионы:</div>
-                <div className="flex flex-wrap gap-1">
-                  {program.eligible_regions.map((r, i) => (
-                    <span key={i} className="badge bg-gray-100 text-gray-700">{r}</span>
-                  ))}
+        <div className="space-y-6">
+          {/* Key Information */}
+          <div className="card p-6 sticky top-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Ключевая информация</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h3M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-500">Организация</div>
+                  <div className="font-medium text-gray-900">{program.organization}</div>
                 </div>
               </div>
-            )}
+              
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-500">Размер финансирования</div>
+                  <div className="font-bold text-green-600 text-lg">{formatAmount(program.funding_amount)}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V19a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h3zM8 7h8" />
+                </svg>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-500">Дедлайн подачи</div>
+                  <div className="font-medium text-gray-900">{formatDate(program.application_deadline)}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-500">Целевая аудитория</div>
+                  <div className="font-medium text-gray-900">{program.target_audience}</div>
+                </div>
+              </div>
+
+              {(program.min_loan_amount || program.max_loan_amount) && (
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-500">Диапазон займа</div>
+                    <div className="font-medium text-gray-900">
+                      {formatAmount(program.min_loan_amount)} - {formatAmount(program.max_loan_amount)}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {program.eligible_regions && program.eligible_regions.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-500">Доступные регионы</div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {program.eligible_regions.slice(0, 3).map((region, i) => (
+                        <span key={i} className="badge bg-indigo-100 text-indigo-800 text-xs">{region}</span>
+                      ))}
+                      {program.eligible_regions.length > 3 && (
+                        <span className="badge bg-gray-100 text-gray-600 text-xs">
+                          +{program.eligible_regions.length - 3} еще
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <button 
+                onClick={handleApply} 
+                className={`btn-primary w-full ${!statusInfo.isOpen ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!statusInfo.isOpen}
+              >
+                {statusInfo.isOpen ? 'Подать заявку' : 'Подача закрыта'}
+              </button>
+              {!statusInfo.isOpen && (
+                <p className="text-sm text-gray-500 text-center mt-2">
+                  {statusInfo.label}
+                </p>
+              )}
+            </div>
           </div>
 
-          <button onClick={handleApply} className="btn-primary w-full mt-6">
-            Подать заявку
-          </button>
+          {/* Help Section */}
+          <div className="card p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Нужна помощь?</h3>
+            <div className="space-y-3">
+              <a 
+                href="tel:+77272445040" 
+                className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors text-blue-700"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                <div>
+                  <div className="font-medium">Горячая линия</div>
+                  <div className="text-sm">+7 (727) 244-50-40</div>
+                </div>
+              </a>
+              
+              <a 
+                href="mailto:info@businesssupport.kz" 
+                className="flex items-center gap-3 p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors text-green-700"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <div>
+                  <div className="font-medium">Email поддержки</div>
+                  <div className="text-sm">info@businesssupport.kz</div>
+                </div>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
