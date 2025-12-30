@@ -128,15 +128,23 @@ class ProgramController {
             const { id } = req.params;
             const result = await database_1.default.query(`SELECT id, title, description, organization, program_type, target_audience,
               funding_amount, application_deadline, requirements, benefits,
-              application_process, contact_info, created_at
-       FROM business_programs 
+              application_process, contact_info, created_at, opens_at, closes_at,
+              supported_regions, min_loan_amount, max_loan_amount, oked_filters,
+              required_documents, application_steps,
+              bank_rate, subsidy_rate, max_loan_term_months, calculator_enabled
+       FROM business_programs
        WHERE id = $1 AND is_active = true`, [id]);
             if (result.rows.length === 0) {
                 throw new errorHandler_1.AppError('Program not found', 404);
             }
+            const program = {
+                ...result.rows[0],
+                eligible_regions: result.rows[0].supported_regions,
+                eligible_oked_codes: result.rows[0].oked_filters,
+            };
             res.json({
                 success: true,
-                data: { program: result.rows[0] },
+                data: { program },
             });
         });
         this.getRecommendations = (0, errorHandler_1.asyncHandler)(async (req, res) => {

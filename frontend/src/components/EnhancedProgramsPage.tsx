@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ProgramFilter } from './ProgramFilter'
 import { ProgramCard } from './ProgramCard'
+import { ProgramCardSkeleton } from './LoadingSkeleton'
 import { BusinessProgram, ProgramFilter as ProgramFilterType } from '@/types/program'
 import { searchPrograms, getRecommendations } from '@/services/api'
 import { useAuthContext } from '@/hooks/useAuth'
@@ -210,11 +211,14 @@ export function EnhancedProgramsPage() {
           
           {/* Programs Grid/List */}
           {loading && programs.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="loading-spinner mx-auto mb-4" />
-                <p className="text-gray-600">Загрузка программ...</p>
-              </div>
+            <div className={
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+                : 'space-y-4'
+            }>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <ProgramCardSkeleton key={i} />
+              ))}
             </div>
           ) : programs.length === 0 ? (
             <div className="text-center py-12">

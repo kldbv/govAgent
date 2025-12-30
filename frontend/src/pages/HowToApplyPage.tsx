@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import DOMPurify from 'dompurify'
 
 export default function HowToApplyPage() {
   const steps = [
@@ -59,7 +60,7 @@ export default function HowToApplyPage() {
       <p className="text-gray-600 mb-8">Универсальные рекомендации по подготовке и подаче заявки на гранты и субсидии.</p>
 
       {html ? (
-        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: html }} />
+        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />
       ) : (
         <>
           <div className="space-y-6">

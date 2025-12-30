@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Calendar, Clock, ChevronLeft, ArrowRight, Share2, BookOpen, Tag } from 'lucide-react'
 import toast from 'react-hot-toast'
+import DOMPurify from 'dompurify'
 import { NewsArticle, getNewsArticleById, getRelatedNews } from '@/data/newsData'
 
 export default function NewsDetailPage() {
@@ -172,7 +173,7 @@ export default function NewsDetailPage() {
           <div className="p-6">
             <div 
               className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: article.content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }}
             />
           </div>
         </article>

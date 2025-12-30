@@ -1,0 +1,1 @@
+import{j as t}from"./index-e5c67441.js";import{A as i}from"./AdminApplicationsManagement-c2a2a58b.js";import"./x-circle-57091fc4.js";import"./search-c5427502.js";import"./filter-0b1c5058.js";function a(){return t.jsx(i,{})}export{a as ManagerApplicationsPage};

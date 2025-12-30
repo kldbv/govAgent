@@ -9,6 +9,7 @@ import { EnhancedDashboard } from '@/components/EnhancedDashboard'
 import { BusinessProgram } from '@/types/program'
 import { getProgramById, getUserApplications } from '@/services/api'
 import { ApplicationWizard } from '@/components/ApplicationWizard'
+import { SubsidyCalculator } from '@/components/SubsidyCalculator'
 
 // LoginPage
 export function LoginPage() {
@@ -415,6 +416,20 @@ export function ProgramDetailPage() {
               <p className="text-gray-700 leading-relaxed whitespace-pre-line">{program.application_process}</p>
             </div>
           </div>
+
+          {/* Subsidy Calculator */}
+          {(program.calculator_enabled || ['кредит', 'субсидия', 'субсидии', 'микрокредит', 'loan', 'subsidy'].includes(program.program_type?.toLowerCase())) && (
+            <div id="calculator">
+              <SubsidyCalculator
+                programId={program.id}
+                defaultBankRate={program.bank_rate || 20.5}
+                defaultSubsidyRate={program.subsidy_rate || 8.2}
+                minLoanAmount={program.min_loan_amount || 1000000}
+                maxLoanAmount={program.max_loan_amount || 500000000}
+                maxLoanTermMonths={program.max_loan_term_months || 120}
+              />
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="card p-6">

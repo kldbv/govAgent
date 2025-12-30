@@ -23,6 +23,11 @@ export interface BusinessProgram {
   max_loan_amount?: number
   required_documents?: string[]
   application_steps?: ApplicationStep[]
+  // Subsidy calculator fields
+  bank_rate?: number
+  subsidy_rate?: number
+  max_loan_term_months?: number
+  calculator_enabled?: boolean
 }
 
 export interface ApplicationStep {

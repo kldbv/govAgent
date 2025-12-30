@@ -17,6 +17,7 @@ const guidance_1 = __importDefault(require("./routes/guidance"));
 const analytics_1 = __importDefault(require("./routes/analytics"));
 const methodology_1 = __importDefault(require("./routes/methodology"));
 const admin_1 = __importDefault(require("./routes/admin"));
+const calculator_1 = __importDefault(require("./routes/calculator"));
 const errorHandler_1 = require("./middleware/errorHandler");
 const migrateApplicationTables_1 = require("./utils/migrateApplicationTables");
 const migrateApplicationSubmissions_1 = require("./utils/migrateApplicationSubmissions");
@@ -25,6 +26,7 @@ const ensureMVPColumns_1 = require("./utils/ensureMVPColumns");
 const addUserRoles_1 = require("./utils/addUserRoles");
 const createAdminUser_1 = require("./utils/createAdminUser");
 const seedTestData_1 = require("./utils/seedTestData");
+const migrateSubsidyCalculatorStartup_1 = require("./utils/migrateSubsidyCalculatorStartup");
 dotenv_1.default.config();
 (async () => {
     try {
@@ -37,6 +39,7 @@ dotenv_1.default.config();
         if (process.env.NODE_ENV !== 'production') {
             await (0, seedTestData_1.seedTestData)();
         }
+        await (0, migrateSubsidyCalculatorStartup_1.addSubsidyCalculatorColumns)();
         console.log('✅ Startup migrations completed');
     }
     catch (err) {
@@ -88,6 +91,7 @@ app.use('/api/guidance', guidance_1.default);
 app.use('/api/analytics', analytics_1.default);
 app.use('/api/methodology', methodology_1.default);
 app.use('/api/admin', admin_1.default);
+app.use('/api/calculator', calculator_1.default);
 app.use('*', (req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });

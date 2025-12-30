@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthContext } from '@/hooks/useAuth'
 import { ProgramCard } from './ProgramCard'
+import { ProgramCardSkeleton } from './LoadingSkeleton'
 import { BusinessProgram } from '@/types/program'
 import { getRecommendations, getUserApplications } from '@/services/api'
 
@@ -197,13 +198,7 @@ export function EnhancedDashboard() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="card p-6 animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-4 w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-4 w-1/2"></div>
-                  <div className="h-8 bg-gray-200 rounded"></div>
-                </div>
+                <ProgramCardSkeleton key={i} />
               ))}
             </div>
           ) : recommendations.length > 0 ? (

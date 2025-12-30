@@ -3,19 +3,26 @@ import pool from '../utils/database';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { RecommendationService } from '../services/RecommendationService';
+import {
+  buildProgramFilters,
+  buildOrderClause,
+  parseBooleanParam,
+  PROGRAM_SELECT_FIELDS,
+  PROGRAM_SELECT_FIELDS_EXTENDED,
+  ProgramFilters
+} from '../utils/queryBuilder';
 
 export class ProgramController {
   private recommendationService = new RecommendationService();
 
   getPrograms = asyncHandler(async (req: Request, res: Response) => {
-    const { 
-      page = 1, 
-      limit = 10, 
-      program_type, 
-      target_audience, 
-      organization, 
+    const {
+      page = 1,
+      limit = 10,
+      program_type,
+      target_audience,
+      organization,
       search,
-      // New BPM-aligned filters
       region,
       oked_code,
       min_amount,
@@ -25,127 +32,55 @@ export class ProgramController {
     } = req.query;
 
     const offset = (Number(page) - 1) * Number(limit);
-    const open_only = (req.query.open_only === '1' || req.query.open_only === 'true');
-    
+    const open_only = parseBooleanParam(req.query.open_only);
+
+    // Build filters using shared utility
+    const filters: ProgramFilters = {
+      program_type: program_type as string,
+      target_audience: target_audience as string,
+      organization: organization as string,
+      search: search as string,
+      region: region as string,
+      oked_code: oked_code as string,
+      min_amount: min_amount ? Number(min_amount) : undefined,
+      max_amount: max_amount ? Number(max_amount) : undefined,
+      open_only
+    };
+
+    const { whereClause, params, nextParamIndex } = buildProgramFilters(filters);
+
+    // Build main query
     let query = `
-      SELECT id, title, description, organization, program_type, target_audience,
-             funding_amount, application_deadline, requirements, benefits,
-             application_process, contact_info, created_at,
-             supported_regions, min_loan_amount, max_loan_amount, oked_filters,
-             required_documents, application_steps
-      FROM business_programs 
+      SELECT ${PROGRAM_SELECT_FIELDS}
+      FROM business_programs
       WHERE is_active = true
     `;
-    
-    const queryParams: any[] = [];
-    let paramIndex = 1;
 
-    // Traditional filters
-    if (program_type) {
-      query += ` AND program_type = $${paramIndex}`;
-      queryParams.push(program_type);
-      paramIndex++;
-    }
-
-    if (target_audience) {
-      query += ` AND target_audience ILIKE $${paramIndex}`;
-      queryParams.push(`%${target_audience}%`);
-      paramIndex++;
-    }
-
-    if (organization) {
-      query += ` AND organization ILIKE $${paramIndex}`;
-      queryParams.push(`%${organization}%`);
-      paramIndex++;
-    }
-
-    if (search) {
-      query += ` AND (title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
-      queryParams.push(`%${search}%`);
-      paramIndex++;
-    }
-
-    // New BMP-aligned filters
-    if (open_only) {
-      query += ` AND (COALESCE(opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
-      query += ` AND (COALESCE(closes_at, application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
-    }
-
-    if (region) {
-      query += ` AND (supported_regions IS NULL OR $${paramIndex} = ANY(supported_regions))`;
-      queryParams.push(region);
-      paramIndex++;
-    }
-
-    if (oked_code) {
-      query += ` AND (oked_filters IS NULL OR $${paramIndex} = ANY(oked_filters) OR EXISTS (
-        SELECT 1 FROM unnest(oked_filters) as filter 
-        WHERE $${paramIndex} LIKE filter || '%' OR filter LIKE substring($${paramIndex}, 1, 1) || '%'
-      ))`;
-      queryParams.push(oked_code);
-      paramIndex++;
-    }
-
-    if (min_amount) {
-      query += ` AND (max_loan_amount IS NULL OR max_loan_amount >= $${paramIndex})`;
-      queryParams.push(Number(min_amount));
-      paramIndex++;
-    }
-
-    if (max_amount) {
-      query += ` AND (min_loan_amount IS NULL OR min_loan_amount <= $${paramIndex})`;
-      queryParams.push(Number(max_amount));
-      paramIndex++;
+    if (whereClause) {
+      query += ` AND ${whereClause}`;
     }
 
     // Dynamic sorting
     const allowedSorts = ['created_at', 'funding_amount', 'application_deadline', 'title'];
     const sortColumn = allowedSorts.includes(sort_by as string) ? sort_by : 'created_at';
     const sortDirection = sort_order === 'ASC' ? 'ASC' : 'DESC';
-    
-    // Add ordering and pagination
-    query += ` ORDER BY ${sortColumn} ${sortDirection} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    queryParams.push(Number(limit), offset);
 
-    const result = await pool.query(query, queryParams);
+    query += ` ORDER BY ${sortColumn} ${sortDirection} LIMIT $${nextParamIndex} OFFSET $${nextParamIndex + 1}`;
+    params.push(Number(limit), offset);
 
-    // Get total count
+    const result = await pool.query(query, params);
+
+    // Get total count using same filters
+    const { whereClause: countWhereClause, params: countParams } = buildProgramFilters(filters);
+
     let countQuery = `
       SELECT COUNT(*) as total
-      FROM business_programs 
+      FROM business_programs
       WHERE is_active = true
     `;
-    
-    const countParams: any[] = [];
-    let countParamIndex = 1;
 
-    if (program_type) {
-      countQuery += ` AND program_type = $${countParamIndex}`;
-      countParams.push(program_type);
-      countParamIndex++;
-    }
-
-    if (target_audience) {
-      countQuery += ` AND target_audience ILIKE $${countParamIndex}`;
-      countParams.push(`%${target_audience}%`);
-      countParamIndex++;
-    }
-
-    if (organization) {
-      countQuery += ` AND organization ILIKE $${countParamIndex}`;
-      countParams.push(`%${organization}%`);
-      countParamIndex++;
-    }
-
-    if (search) {
-      countQuery += ` AND (title ILIKE $${countParamIndex} OR description ILIKE $${countParamIndex})`;
-      countParams.push(`%${search}%`);
-      countParamIndex++;
-    }
-
-    if (open_only) {
-      countQuery += ` AND (COALESCE(opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
-      countQuery += ` AND (COALESCE(closes_at, application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
+    if (countWhereClause) {
+      countQuery += ` AND ${countWhereClause}`;
     }
 
     const countResult = await pool.query(countQuery, countParams);
@@ -169,10 +104,8 @@ export class ProgramController {
     const { id } = req.params;
 
     const result = await pool.query(
-      `SELECT id, title, description, organization, program_type, target_audience,
-              funding_amount, application_deadline, requirements, benefits,
-              application_process, contact_info, created_at
-       FROM business_programs 
+      `SELECT ${PROGRAM_SELECT_FIELDS_EXTENDED}
+       FROM business_programs
        WHERE id = $1 AND is_active = true`,
       [id]
     );
@@ -181,9 +114,16 @@ export class ProgramController {
       throw new AppError('Program not found', 404);
     }
 
+    // Map database fields to API response
+    const program = {
+      ...result.rows[0],
+      eligible_regions: result.rows[0].supported_regions,
+      eligible_oked_codes: result.rows[0].oked_filters,
+    };
+
     res.json({
       success: true,
-      data: { program: result.rows[0] },
+      data: { program },
     });
   });
 
@@ -202,18 +142,17 @@ export class ProgramController {
 
     const userProfile = profileResult.rows[0];
 
-    // Get all active programs
+    // Get active programs with pagination limit
     const programsResult = await pool.query(
-      `SELECT id, title, description, organization, program_type, target_audience,
-              funding_amount, application_deadline, requirements, benefits,
-              application_process, contact_info, created_at
-       FROM business_programs 
+      `SELECT ${PROGRAM_SELECT_FIELDS}
+       FROM business_programs
        WHERE is_active = true
-       ORDER BY created_at DESC`
+       ORDER BY created_at DESC
+       LIMIT 100`
     );
 
     const programs = programsResult.rows;
-    
+
     // Get recommendations using the recommendation service
     const recommendations = await this.recommendationService.getRecommendations(
       userProfile,
@@ -229,36 +168,36 @@ export class ProgramController {
   getProgramStats = asyncHandler(async (req: Request, res: Response) => {
     // Get stats by type
     const typeStatsResult = await pool.query(
-      `SELECT program_type, COUNT(*) as count 
-       FROM business_programs 
-       WHERE is_active = true 
+      `SELECT program_type, COUNT(*) as count
+       FROM business_programs
+       WHERE is_active = true
        GROUP BY program_type`
     );
 
     // Get stats by organization
     const orgStatsResult = await pool.query(
-      `SELECT organization, COUNT(*) as count 
-       FROM business_programs 
-       WHERE is_active = true 
+      `SELECT organization, COUNT(*) as count
+       FROM business_programs
+       WHERE is_active = true
        GROUP BY organization`
     );
 
     // Get stats by region (unnest supported_regions)
     const regionStatsResult = await pool.query(
-      `SELECT unnest(supported_regions) as region, COUNT(*) as count 
-       FROM business_programs 
+      `SELECT unnest(supported_regions) as region, COUNT(*) as count
+       FROM business_programs
        WHERE is_active = true AND supported_regions IS NOT NULL
        GROUP BY region`
     );
 
     // Get funding range stats
     const fundingStatsResult = await pool.query(
-      `SELECT 
+      `SELECT
          MIN(funding_amount) as min_funding,
          MAX(funding_amount) as max_funding,
          AVG(funding_amount) as avg_funding,
          COUNT(*) as total_programs
-       FROM business_programs 
+       FROM business_programs
        WHERE is_active = true AND funding_amount IS NOT NULL`
     );
 
@@ -298,11 +237,11 @@ export class ProgramController {
   });
 
   searchPrograms = asyncHandler(async (req: Request, res: Response) => {
-    const { 
-      page = 1, 
-      limit = 12, 
+    const {
+      page = 1,
+      limit = 12,
       search,
-      program_type, 
+      program_type,
       organization,
       region,
       oked_code,
@@ -314,160 +253,73 @@ export class ProgramController {
     } = req.query;
 
     const offset = (Number(page) - 1) * Number(limit);
-    const open_only = (req.query.open_only === '1' || req.query.open_only === 'true');
-    
+    const open_only = parseBooleanParam(req.query.open_only);
+    const hasSearch = Boolean(search);
+
+    // Build filters using shared utility
+    const filters: ProgramFilters = {
+      program_type: program_type as string,
+      organization: organization as string,
+      region: region as string,
+      oked_code: oked_code as string,
+      min_funding: min_funding ? Number(min_funding) : undefined,
+      max_funding: max_funding ? Number(max_funding) : undefined,
+      business_type: business_type as string,
+      business_size: business_size as string,
+      open_only
+    };
+
+    // For full-text search, we handle it separately
+    const { whereClause, params, nextParamIndex } = buildProgramFilters(filters, 2, 'p');
+
+    // Build main query with full-text search support
     let query = `
-      SELECT p.id, p.title, p.description, p.organization, p.program_type, p.target_audience,
-             p.funding_amount, p.application_deadline, p.requirements, p.benefits,
-             p.application_process, p.contact_info, p.created_at,
-             p.supported_regions, p.min_loan_amount, p.max_loan_amount, p.oked_filters,
-             p.required_documents, p.application_steps,
+      SELECT ${PROGRAM_SELECT_FIELDS.split(',').map(f => `p.${f.trim()}`).join(', ')},
              CASE WHEN $1::text IS NOT NULL THEN
                ts_rank(to_tsvector('russian', p.title || ' ' || p.description), plainto_tsquery('russian', $1::text))
              ELSE 0 END as relevance_score
       FROM business_programs p
       WHERE p.is_active = true
     `;
-    
-    const queryParams: any[] = [search || null];
-    let paramIndex = 2;
 
-    // Text search
-    if (search) {
+    const queryParams: any[] = [search || null, ...params];
+
+    // Add full-text search condition
+    if (hasSearch) {
       query += ` AND (to_tsvector('russian', p.title || ' ' || p.description) @@ plainto_tsquery('russian', $1))`;
     }
 
-    // Program type filter
-    if (program_type) {
-      query += ` AND p.program_type = $${paramIndex}`;
-      queryParams.push(program_type);
-      paramIndex++;
+    if (whereClause) {
+      query += ` AND ${whereClause}`;
     }
 
-    // Organization filter
-    if (organization) {
-      query += ` AND p.organization = $${paramIndex}`;
-      queryParams.push(organization);
-      paramIndex++;
-    }
-
-    // Region filter
-    if (region) {
-      query += ` AND (p.supported_regions IS NULL OR $${paramIndex} = ANY(p.supported_regions))`;
-      queryParams.push(region);
-      paramIndex++;
-    }
-
-    // Open only filter
-    if (open_only) {
-      query += ` AND (COALESCE(p.opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
-      query += ` AND (COALESCE(p.closes_at, p.application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
-    }
-
-    // OKED filter with hierarchical matching
-    if (oked_code) {
-      query += ` AND (p.oked_filters IS NULL OR $${paramIndex} = ANY(p.oked_filters) OR EXISTS (
-        SELECT 1 FROM unnest(p.oked_filters) as filter 
-        WHERE $${paramIndex} LIKE filter || '%' OR filter LIKE substring($${paramIndex}, 1, 1) || '%'
-      ))`;
-      queryParams.push(oked_code);
-      paramIndex++;
-    }
-
-    // Funding range filters
-    if (min_funding) {
-      query += ` AND (p.funding_amount IS NULL OR p.funding_amount >= $${paramIndex})`;
-      queryParams.push(Number(min_funding));
-      paramIndex++;
-    }
-
-    if (max_funding) {
-      query += ` AND (p.funding_amount IS NULL OR p.funding_amount <= $${paramIndex})`;
-      queryParams.push(Number(max_funding));
-      paramIndex++;
-    }
-
-    // Business type/size filters (match against target_audience)
-    if (business_type) {
-      query += ` AND p.target_audience ILIKE $${paramIndex}`;
-      queryParams.push(`%${business_type}%`);
-      paramIndex++;
-    }
-
-    if (business_size) {
-      query += ` AND p.target_audience ILIKE $${paramIndex}`;
-      queryParams.push(`%${business_size}%`);
-      paramIndex++;
-    }
-
-    // Sorting
-    let orderClause = '';
-    switch (sort) {
-      case 'funding_amount':
-        orderClause = 'ORDER BY p.funding_amount DESC NULLS LAST';
-        break;
-      case 'deadline':
-        orderClause = 'ORDER BY p.application_deadline ASC NULLS LAST';
-        break;
-      case 'newest':
-        orderClause = 'ORDER BY p.created_at DESC';
-        break;
-      case 'title':
-        orderClause = 'ORDER BY p.title ASC';
-        break;
-      case 'relevance':
-      default:
-        orderClause = search 
-          ? 'ORDER BY relevance_score DESC, p.created_at DESC'
-          : 'ORDER BY p.created_at DESC';
-        break;
-    }
-    
-    query += ` ${orderClause} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    // Add ordering
+    const orderClause = buildOrderClause(sort as string, 'p', hasSearch);
+    query += ` ${orderClause} LIMIT $${nextParamIndex} OFFSET $${nextParamIndex + 1}`;
     queryParams.push(Number(limit), offset);
 
     const result = await pool.query(query, queryParams);
 
-    // Get total count for pagination
+    // Get total count
+    const { whereClause: countWhereClause, params: countParams } = buildProgramFilters(filters, hasSearch ? 2 : 1, 'p');
+
     let countQuery = `
       SELECT COUNT(*) as total
       FROM business_programs p
       WHERE p.is_active = true
     `;
-    
-    const countParams: any[] = [];
-    let countParamIndex = 1;
 
-    if (search) {
-      countQuery += ` AND (to_tsvector('russian', p.title || ' ' || p.description) @@ plainto_tsquery('russian', $${countParamIndex}))`;
-      countParams.push(search);
-      countParamIndex++;
+    const countQueryParams: any[] = hasSearch ? [search, ...countParams] : countParams;
+
+    if (hasSearch) {
+      countQuery += ` AND (to_tsvector('russian', p.title || ' ' || p.description) @@ plainto_tsquery('russian', $1))`;
     }
 
-    if (program_type) {
-      countQuery += ` AND p.program_type = $${countParamIndex}`;
-      countParams.push(program_type);
-      countParamIndex++;
+    if (countWhereClause) {
+      countQuery += ` AND ${countWhereClause}`;
     }
 
-    if (organization) {
-      countQuery += ` AND p.organization = $${countParamIndex}`;
-      countParams.push(organization);
-      countParamIndex++;
-    }
-
-    if (region) {
-      countQuery += ` AND (p.supported_regions IS NULL OR $${countParamIndex} = ANY(p.supported_regions))`;
-      countParams.push(region);
-      countParamIndex++;
-    }
-
-    if (open_only) {
-      countQuery += ` AND (COALESCE(p.opens_at, NOW() - INTERVAL '100 years') <= NOW())`;
-      countQuery += ` AND (COALESCE(p.closes_at, p.application_deadline, NOW() + INTERVAL '100 years') >= NOW())`;
-    }
-
-    const countResult = await pool.query(countQuery, countParams);
+    const countResult = await pool.query(countQuery, countQueryParams);
     const total = parseInt(countResult.rows[0].total);
 
     res.json({

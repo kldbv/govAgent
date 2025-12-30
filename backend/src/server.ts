@@ -13,6 +13,7 @@ import guidanceRoutes from './routes/guidance';
 import analyticsRoutes from './routes/analytics';
 import methodologyRoutes from './routes/methodology';
 import adminRoutes from './routes/admin';
+import calculatorRoutes from './routes/calculator';
 import { errorHandler } from './middleware/errorHandler';
 import { createApplicationTables } from './utils/migrateApplicationTables';
 import { createApplicationSubmissionsTable } from './utils/migrateApplicationSubmissions';
@@ -21,6 +22,8 @@ import { ensureMVPColumns } from './utils/ensureMVPColumns';
 import { addUserRoles } from './utils/addUserRoles';
 import { createAdminUser } from './utils/createAdminUser';
 import { seedTestData } from './utils/seedTestData';
+import { addSubsidyCalculatorColumns } from './utils/migrateSubsidyCalculatorStartup';
+import { addPerformanceIndexes } from './utils/migratePerformanceIndexes';
 
 dotenv.config();
 
@@ -40,6 +43,10 @@ dotenv.config();
     if (process.env.NODE_ENV !== 'production') {
       await seedTestData();
     }
+    // Add subsidy calculator columns
+    await addSubsidyCalculatorColumns();
+    // Add performance indexes
+    await addPerformanceIndexes();
     console.log('✅ Startup migrations completed');
   } catch (err) {
     console.error('❌ Startup migrations failed (continuing to start server):', err);
@@ -107,6 +114,7 @@ app.use('/api/guidance', guidanceRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/methodology', methodologyRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/calculator', calculatorRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

@@ -24,14 +24,13 @@ export const authenticate = async (
       throw new AppError('Access token is required', 401);
     }
 
-    // Use a development fallback secret only outside production to avoid 500s during local testing
-    const resolvedSecret = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-secret-change-me' : undefined);
-    if (!resolvedSecret) {
-      // In production we must have a configured secret
-      throw new AppError('JWT secret not configured', 500);
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('CRITICAL: JWT_SECRET environment variable is not set!');
+      throw new AppError('Server configuration error', 500);
     }
 
-    const decoded = jwt.verify(token, resolvedSecret) as any;
+    const decoded = jwt.verify(token, jwtSecret) as any;
     
     // Get user from database
     const result = await pool.query(
