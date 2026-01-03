@@ -66,6 +66,22 @@ const migrations = [
   );
   `,
 
+  // Add phone and company_name columns to users table
+  `
+  DO $$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'phone') THEN
+      ALTER TABLE users ADD COLUMN phone VARCHAR(20);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'company_name') THEN
+      ALTER TABLE users ADD COLUMN company_name VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'role') THEN
+      ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user';
+    END IF;
+  END $$;
+  `,
+
   // Add indexes for better performance
   `
   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

@@ -150,53 +150,92 @@ export class RecommendationService {
   }
 
   private matchIndustry(
-    userProfile: UserProfile, 
+    userProfile: UserProfile,
     program: BusinessProgram
   ): { score: number; reasons: string[] } {
     const description = program.description.toLowerCase();
     const title = program.title.toLowerCase();
+    const targetAudience = program.target_audience.toLowerCase();
     const industry = userProfile.industry.toLowerCase();
-    
+    const combinedText = `${title} ${description} ${targetAudience}`;
+
     let score = 0;
     const reasons: string[] = [];
 
     // IT industry matching
-    if (industry.includes('it') || industry.includes('технолог')) {
-      if (title.includes('it') || description.includes('технолог') || description.includes('цифров')) {
-        score += 25;
+    if (industry.includes('it') || industry.includes('технолог') || industry.includes('информацион')) {
+      if (combinedText.includes('it') || combinedText.includes('технолог') ||
+          combinedText.includes('цифров') || combinedText.includes('стартап')) {
+        score += 35;
         reasons.push('Специально для IT-сферы');
       }
     }
 
-    // Manufacturing
-    if (industry.includes('производств') || industry.includes('manufacturing')) {
-      if (description.includes('производств') || description.includes('промышленн')) {
-        score += 25;
+    // Manufacturing - check for production-related keywords
+    if (industry.includes('производств') || industry.includes('manufacturing') ||
+        industry.includes('промышлен') || industry.includes('обрабатыва')) {
+      if (combinedText.includes('производств') || combinedText.includes('промышленн') ||
+          combinedText.includes('индустриал') || combinedText.includes('обрабатыва') ||
+          combinedText.includes('экспорт')) {
+        score += 35;
         reasons.push('Поддержка производственного сектора');
       }
     }
 
     // Agriculture
-    if (industry.includes('сельск') || industry.includes('агро')) {
-      if (description.includes('сельск') || description.includes('агро')) {
-        score += 25;
+    if (industry.includes('сельск') || industry.includes('агро') || industry.includes('фермер')) {
+      if (combinedText.includes('сельск') || combinedText.includes('агро') ||
+          combinedText.includes('фермер') || combinedText.includes('апк')) {
+        score += 35;
         reasons.push('Поддержка сельского хозяйства');
       }
     }
 
     // Services
     if (industry.includes('услуг') || industry.includes('сервис')) {
-      if (description.includes('услуг') || description.includes('сервис')) {
-        score += 20;
+      if (combinedText.includes('услуг') || combinedText.includes('сервис')) {
+        score += 30;
         reasons.push('Поддержка сферы услуг');
       }
     }
 
     // Tourism
-    if (industry.includes('туризм')) {
-      if (description.includes('туризм')) {
-        score += 25;
+    if (industry.includes('туризм') || industry.includes('гостинич')) {
+      if (combinedText.includes('туризм') || combinedText.includes('гостинич') ||
+          combinedText.includes('туристич')) {
+        score += 35;
         reasons.push('Поддержка туристической отрасли');
+      }
+    }
+
+    // Trade/Commerce
+    if (industry.includes('торгов') || industry.includes('коммерц') || industry.includes('ритейл')) {
+      if (combinedText.includes('торгов') || combinedText.includes('коммерц') ||
+          combinedText.includes('экспорт')) {
+        score += 30;
+        reasons.push('Поддержка торговой деятельности');
+      }
+    }
+
+    // Construction
+    if (industry.includes('строитель') || industry.includes('недвижим')) {
+      if (combinedText.includes('строитель') || combinedText.includes('недвижим')) {
+        score += 30;
+        reasons.push('Поддержка строительной отрасли');
+      }
+    }
+
+    // Apply negative score if program is clearly for different industry
+    // This prevents IT programs from ranking high for manufacturing users
+    if (!industry.includes('it') && !industry.includes('технолог') && !industry.includes('информацион') && !industry.includes('телеком')) {
+      // Check if program is IT-focused (title and description already lowercase)
+      const isITProgram = combinedText.includes('it-стартап') ||
+                          combinedText.includes('it стартап') ||
+                          (combinedText.includes('it') && combinedText.includes('стартап')) ||
+                          combinedText.includes('технологических стартап');
+      if (isITProgram) {
+        score -= 40; // Strong penalty for IT programs when user is not in IT
+        reasons.push('Программа не соответствует вашей отрасли');
       }
     }
 

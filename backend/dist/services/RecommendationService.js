@@ -98,37 +98,68 @@ class RecommendationService {
     matchIndustry(userProfile, program) {
         const description = program.description.toLowerCase();
         const title = program.title.toLowerCase();
+        const targetAudience = program.target_audience.toLowerCase();
         const industry = userProfile.industry.toLowerCase();
+        const combinedText = `${title} ${description} ${targetAudience}`;
         let score = 0;
         const reasons = [];
-        if (industry.includes('it') || industry.includes('технолог')) {
-            if (title.includes('it') || description.includes('технолог') || description.includes('цифров')) {
-                score += 25;
+        if (industry.includes('it') || industry.includes('технолог') || industry.includes('информацион')) {
+            if (combinedText.includes('it') || combinedText.includes('технолог') ||
+                combinedText.includes('цифров') || combinedText.includes('стартап')) {
+                score += 35;
                 reasons.push('Специально для IT-сферы');
             }
         }
-        if (industry.includes('производств') || industry.includes('manufacturing')) {
-            if (description.includes('производств') || description.includes('промышленн')) {
-                score += 25;
+        if (industry.includes('производств') || industry.includes('manufacturing') ||
+            industry.includes('промышлен') || industry.includes('обрабатыва')) {
+            if (combinedText.includes('производств') || combinedText.includes('промышленн') ||
+                combinedText.includes('индустриал') || combinedText.includes('обрабатыва') ||
+                combinedText.includes('экспорт')) {
+                score += 35;
                 reasons.push('Поддержка производственного сектора');
             }
         }
-        if (industry.includes('сельск') || industry.includes('агро')) {
-            if (description.includes('сельск') || description.includes('агро')) {
-                score += 25;
+        if (industry.includes('сельск') || industry.includes('агро') || industry.includes('фермер')) {
+            if (combinedText.includes('сельск') || combinedText.includes('агро') ||
+                combinedText.includes('фермер') || combinedText.includes('апк')) {
+                score += 35;
                 reasons.push('Поддержка сельского хозяйства');
             }
         }
         if (industry.includes('услуг') || industry.includes('сервис')) {
-            if (description.includes('услуг') || description.includes('сервис')) {
-                score += 20;
+            if (combinedText.includes('услуг') || combinedText.includes('сервис')) {
+                score += 30;
                 reasons.push('Поддержка сферы услуг');
             }
         }
-        if (industry.includes('туризм')) {
-            if (description.includes('туризм')) {
-                score += 25;
+        if (industry.includes('туризм') || industry.includes('гостинич')) {
+            if (combinedText.includes('туризм') || combinedText.includes('гостинич') ||
+                combinedText.includes('туристич')) {
+                score += 35;
                 reasons.push('Поддержка туристической отрасли');
+            }
+        }
+        if (industry.includes('торгов') || industry.includes('коммерц') || industry.includes('ритейл')) {
+            if (combinedText.includes('торгов') || combinedText.includes('коммерц') ||
+                combinedText.includes('экспорт')) {
+                score += 30;
+                reasons.push('Поддержка торговой деятельности');
+            }
+        }
+        if (industry.includes('строитель') || industry.includes('недвижим')) {
+            if (combinedText.includes('строитель') || combinedText.includes('недвижим')) {
+                score += 30;
+                reasons.push('Поддержка строительной отрасли');
+            }
+        }
+        if (!industry.includes('it') && !industry.includes('технолог') && !industry.includes('информацион') && !industry.includes('телеком')) {
+            const isITProgram = combinedText.includes('it-стартап') ||
+                combinedText.includes('it стартап') ||
+                (combinedText.includes('it') && combinedText.includes('стартап')) ||
+                combinedText.includes('технологических стартап');
+            if (isITProgram) {
+                score -= 40;
+                reasons.push('Программа не соответствует вашей отрасли');
             }
         }
         return { score, reasons };

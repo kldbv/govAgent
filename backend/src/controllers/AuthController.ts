@@ -31,6 +31,9 @@ const profileSchema = Joi.object({
   desired_loan_amount: Joi.number().min(0).optional(),
   business_goals: Joi.array().items(Joi.string()).optional(),
   business_goals_comments: Joi.string().max(2000).allow('', null).optional(),
+  // User info fields (stored in users table)
+  phone: Joi.string().max(20).allow('', null).optional(),
+  company_name: Joi.string().max(255).allow('', null).optional(),
 }).unknown(false);
 
 export class AuthController {
@@ -86,7 +89,11 @@ export class AuthController {
           id: user.id,
           email: user.email,
           full_name: user.full_name,
+          phone: null,
+          company_name: null,
           created_at: user.created_at,
+          role: 'user',
+          profile: null,
         },
         token,
       },
@@ -101,9 +108,16 @@ export class AuthController {
 
     const { email, password } = req.body;
 
-    // Find user
+    // Find user with profile data (case-insensitive email)
     const result = await pool.query(
-      'SELECT id, email, password, full_name, role FROM users WHERE email = $1',
+      `SELECT u.id, u.email, u.password, u.full_name, u.role, u.phone, u.company_name, u.created_at,
+              p.user_id AS profile_user_id,
+              p.business_type, p.business_size, p.industry, p.region,
+              p.experience_years, p.annual_revenue, p.employee_count,
+              p.bin, p.oked_code, p.desired_loan_amount, p.business_goals, p.business_goals_comments
+       FROM users u
+       LEFT JOIN user_profiles p ON u.id = p.user_id
+       WHERE LOWER(u.email) = LOWER($1)`,
       [email]
     );
 
@@ -111,10 +125,10 @@ export class AuthController {
       throw new AppError('Invalid email or password', 401);
     }
 
-    const user = result.rows[0];
+    const row = result.rows[0];
 
     // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password, row.password);
     if (!isValidPassword) {
       throw new AppError('Invalid email or password', 401);
     }
@@ -126,7 +140,7 @@ export class AuthController {
     }
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: row.id, email: row.email },
       jwtSecret,
       { expiresIn: '7d' }
     );
@@ -136,10 +150,27 @@ export class AuthController {
       message: 'Login successful',
       data: {
         user: {
-          id: user.id,
-          email: user.email,
-          full_name: user.full_name,
-          role: user.role || 'user',
+          id: row.id,
+          email: row.email,
+          full_name: row.full_name,
+          phone: row.phone,
+          company_name: row.company_name,
+          created_at: row.created_at,
+          role: row.role || 'user',
+          profile: row.profile_user_id ? {
+            business_type: row.business_type,
+            business_size: row.business_size,
+            industry: row.industry,
+            region: row.region,
+            experience_years: row.experience_years,
+            annual_revenue: row.annual_revenue,
+            employee_count: row.employee_count,
+            bin: row.bin,
+            oked_code: row.oked_code,
+            desired_loan_amount: row.desired_loan_amount,
+            business_goals: row.business_goals,
+            business_goals_comments: row.business_goals_comments,
+          } : null,
         },
         token,
       },
@@ -151,13 +182,13 @@ export class AuthController {
 
     // Get user with profile
     const userResult = await pool.query(
-      `SELECT u.id, u.email, u.full_name, u.created_at, u.role,
+      `SELECT u.id, u.email, u.full_name, u.created_at, u.role, u.phone, u.company_name,
               p.user_id AS profile_user_id,
               p.business_type, p.business_size, p.industry, p.region,
               p.experience_years, p.annual_revenue, p.employee_count,
               p.bin, p.oked_code, p.desired_loan_amount, p.business_goals, p.business_goals_comments
-       FROM users u 
-       LEFT JOIN user_profiles p ON u.id = p.user_id 
+       FROM users u
+       LEFT JOIN user_profiles p ON u.id = p.user_id
        WHERE u.id = $1`,
       [userId]
     );
@@ -171,6 +202,8 @@ export class AuthController {
           id: row.id,
           email: row.email,
           full_name: row.full_name,
+          phone: row.phone,
+          company_name: row.company_name,
           created_at: row.created_at,
           role: row.role || 'user',
           profile: row.profile_user_id ? {
@@ -212,7 +245,34 @@ export class AuthController {
       desired_loan_amount,
       business_goals,
       business_goals_comments,
+      phone,
+      company_name,
     } = req.body;
+
+    // Update user info (phone, company_name) in users table if provided
+    if (phone !== undefined || company_name !== undefined) {
+      const updateFields: string[] = [];
+      const updateValues: any[] = [];
+      let paramIndex = 1;
+
+      if (phone !== undefined) {
+        updateFields.push(`phone = $${paramIndex++}`);
+        updateValues.push(phone || null);
+      }
+      if (company_name !== undefined) {
+        updateFields.push(`company_name = $${paramIndex++}`);
+        updateValues.push(company_name || null);
+      }
+
+      if (updateFields.length > 0) {
+        updateFields.push(`updated_at = NOW()`);
+        updateValues.push(userId);
+        await pool.query(
+          `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramIndex}`,
+          updateValues
+        );
+      }
+    }
 
     // Check if profile exists
     const existingProfile = await pool.query(
@@ -224,7 +284,7 @@ export class AuthController {
     if (existingProfile.rows.length > 0) {
       // Update existing profile
       result = await pool.query(
-        `UPDATE user_profiles 
+        `UPDATE user_profiles
          SET business_type = $1, business_size = $2, industry = $3, region = $4,
              experience_years = $5, annual_revenue = $6, employee_count = $7,
              bin = $8, oked_code = $9, desired_loan_amount = $10, business_goals = $11,
@@ -251,7 +311,7 @@ export class AuthController {
     } else {
       // Create new profile
       result = await pool.query(
-        `INSERT INTO user_profiles 
+        `INSERT INTO user_profiles
          (user_id, business_type, business_size, industry, region, experience_years, annual_revenue, employee_count, bin, oked_code, desired_loan_amount, business_goals, business_goals_comments)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          RETURNING *`,

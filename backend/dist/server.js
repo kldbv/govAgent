@@ -27,6 +27,7 @@ const addUserRoles_1 = require("./utils/addUserRoles");
 const createAdminUser_1 = require("./utils/createAdminUser");
 const seedTestData_1 = require("./utils/seedTestData");
 const migrateSubsidyCalculatorStartup_1 = require("./utils/migrateSubsidyCalculatorStartup");
+const migratePerformanceIndexes_1 = require("./utils/migratePerformanceIndexes");
 dotenv_1.default.config();
 (async () => {
     try {
@@ -40,6 +41,7 @@ dotenv_1.default.config();
             await (0, seedTestData_1.seedTestData)();
         }
         await (0, migrateSubsidyCalculatorStartup_1.addSubsidyCalculatorColumns)();
+        await (0, migratePerformanceIndexes_1.addPerformanceIndexes)();
         console.log('✅ Startup migrations completed');
     }
     catch (err) {

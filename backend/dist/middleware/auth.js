@@ -13,11 +13,12 @@ const authenticate = async (req, res, next) => {
         if (!token) {
             throw new errorHandler_1.AppError('Access token is required', 401);
         }
-        const resolvedSecret = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-secret-change-me' : undefined);
-        if (!resolvedSecret) {
-            throw new errorHandler_1.AppError('JWT secret not configured', 500);
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            console.error('CRITICAL: JWT_SECRET environment variable is not set!');
+            throw new errorHandler_1.AppError('Server configuration error', 500);
         }
-        const decoded = jsonwebtoken_1.default.verify(token, resolvedSecret);
+        const decoded = jsonwebtoken_1.default.verify(token, jwtSecret);
         const result = await database_1.default.query('SELECT id, email, full_name, role FROM users WHERE id = $1', [decoded.userId]);
         if (result.rows.length === 0) {
             throw new errorHandler_1.AppError('User not found', 401);
